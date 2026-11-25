@@ -3,7 +3,7 @@ package com.facturacion.sistemaweb.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "\"TipoUsuario\"", schema = "dbo")
+@Table(name = "TipoUsuario", schema = "dbo")
 public class TipoUsuario {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ID_TIPO_USUARIO", nullable = false)

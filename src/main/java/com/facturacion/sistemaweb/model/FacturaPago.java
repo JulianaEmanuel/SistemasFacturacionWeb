@@ -1,7 +1,7 @@
 package com.facturacion.sistemaweb.model;
 import java.math.BigDecimal;
 import jakarta.persistence.*;
-@Entity @Table(name="\"FacturaPago\"",schema="dbo",uniqueConstraints=@UniqueConstraint(columnNames="ID_FACTURA"))
+@Entity @Table(name="FacturaPago",schema="dbo",uniqueConstraints=@UniqueConstraint(columnNames="ID_FACTURA"))
 public class FacturaPago {
     @Id @GeneratedValue(strategy=GenerationType.IDENTITY) @Column(name="ID_FACTURA_PAGO") private Long id;
     @Column(name="ID_FACTURA",nullable=false) private Long idFactura;

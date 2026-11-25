@@ -23,7 +23,7 @@ public class IntentoRecuperacionRepository {
             asegurarTransaccionFisica();
             bloquear(tipo,destino);
             bloquear((byte)0,ip);
-            jdbc.update("DELETE TOP (1000) FROM dbo.IntentoRecuperacion WHERE CREADO_EN<DATEADD(day,-1,SYSUTCDATETIME())");
+            jdbc.update("DELETE FROM dbo.IntentoRecuperacion WHERE ID_INTENTO IN (SELECT ID_INTENTO FROM dbo.IntentoRecuperacion WHERE CREADO_EN<dateadd('day',-1,sysutcdatetime()) LIMIT 1000)");
             Long destinoPrevio=jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.IntentoRecuperacion "
                 +"WHERE TIPO=? AND HUELLA=? AND CREADO_EN>=DATEADD(hour,-1,SYSUTCDATETIME())",Long.class,tipo,destino);
             Long ipPrevio=jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.IntentoRecuperacion "
@@ -38,6 +38,9 @@ public class IntentoRecuperacionRepository {
         Integer abierta=jdbc.execute((ConnectionCallback<Integer>) connection -> {
             if(connection.getAutoCommit())
                 throw new InvalidDataAccessApiUsageException("El límite de recuperación requiere una conexión transaccional.");
+            if(connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres")) {
+                return 1;
+            }
             try(PreparedStatement statement=connection.prepareStatement(
                     "IF @@TRANCOUNT = 0 BEGIN DECLARE @ignored int; SELECT TOP (1) @ignored=object_id FROM sys.objects; END; SELECT @@TRANCOUNT");
                 ResultSet result=statement.executeQuery()) {
@@ -50,6 +53,13 @@ public class IntentoRecuperacionRepository {
 
     private void bloquear(byte tipo,byte[] huella) {
         Integer resultado=jdbc.execute((ConnectionCallback<Integer>) connection -> {
+            if(connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres")) {
+                try(PreparedStatement ps=connection.prepareStatement("SELECT pg_advisory_xact_lock(hashtext(?))")) {
+                    ps.setString(1,"SistemaFacturacionWeb.Recovery.rate."+tipo+"."+hex(huella));
+                    ps.execute();
+                    return 0;
+                }
+            }
             try(CallableStatement call=connection.prepareCall("{? = call sys.sp_getapplock(?, ?, ?, ?)}")) {
                 call.registerOutParameter(1,Types.INTEGER);
                 call.setString(2,"SistemaFacturacionWeb.Recovery.rate."+tipo+"."+hex(huella));

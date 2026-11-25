@@ -1,0 +1,11 @@
+# Plantilla de conexión a PostgreSQL local (copiar a application-postgres.properties)
+spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sistemafacturacionweb}?currentSchema=dbo
+spring.datasource.username=${DB_USER:postgres}
+spring.datasource.password=${DB_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+# Compatibilidad con verificador de base de datos
+app.sqlserver.database-name=${DB_NAME:sistemafacturacionweb}

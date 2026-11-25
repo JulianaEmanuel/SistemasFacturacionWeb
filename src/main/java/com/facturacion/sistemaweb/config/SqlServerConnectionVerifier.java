@@ -32,20 +32,23 @@ public class SqlServerConnectionVerifier implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) throws Exception {
-		try (Connection connection = dataSource.getConnection();
-				Statement statement = connection.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT DB_NAME()")) {
-			if (!resultSet.next()) {
-				throw new IllegalStateException("SQL Server no devolvió el nombre de la base de datos.");
-			}
+		try (Connection connection = dataSource.getConnection()) {
+			String isPg = connection.getMetaData().getDatabaseProductName().toLowerCase();
+			String query = isPg.contains("postgres") ? "SELECT current_database()" : "SELECT DB_NAME()";
+			try (Statement statement = connection.createStatement();
+					ResultSet resultSet = statement.executeQuery(query)) {
+				if (!resultSet.next()) {
+					throw new IllegalStateException("El motor no devolvió el nombre de la base de datos.");
+				}
 
-			String actualDatabase = resultSet.getString(1);
-			if (!expectedDatabase.equalsIgnoreCase(actualDatabase)) {
-				throw new IllegalStateException("La conexión llegó a '" + actualDatabase
-						+ "' en lugar de la base esperada '" + expectedDatabase + "'.");
-			}
+				String actualDatabase = resultSet.getString(1);
+				if (!expectedDatabase.equalsIgnoreCase(actualDatabase)) {
+					throw new IllegalStateException("La conexión llegó a '" + actualDatabase
+							+ "' en lugar de la base esperada '" + expectedDatabase + "'.");
+				}
 
-			LOGGER.info("Conexión JDBC confirmada. Base de datos: {}", actualDatabase);
+				LOGGER.info("Conexión JDBC confirmada. Base de datos: {}", actualDatabase);
+			}
 		}
 	}
 }

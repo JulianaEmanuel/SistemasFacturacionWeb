@@ -19,7 +19,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 			+ "ORDER BY p.nombreProducto")
 	List<Producto> buscarPorNombre(@Param("filtro") String filtro);
 
-	@Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Detallefactura d "
-			+ "WHERE d.ID_PRODUCTO = :idProducto) THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+	@Query("SELECT COUNT(d) > 0 FROM DetalleFactura d WHERE d.producto.idProducto = :idProducto")
 	boolean tieneDetallesFactura(@Param("idProducto") Long idProducto);
 }

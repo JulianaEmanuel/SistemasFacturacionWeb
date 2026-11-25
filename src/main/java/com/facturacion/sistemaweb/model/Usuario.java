@@ -1,11 +1,9 @@
 package com.facturacion.sistemaweb.model;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.Immutable;
 
-/** Vista JPA de solo lectura: deliberadamente no mapea CONTRASENIA. */
+/** Vista JPA de solo lectura: deliberadamente no mapea CONTRASENIA ni expone setters. */
 @Entity
-@Immutable
 @Table(name = "Usuario", schema = "dbo")
 public class Usuario {
     @Id

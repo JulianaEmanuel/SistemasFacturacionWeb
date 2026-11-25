@@ -20,7 +20,7 @@ public class ReporteRepository {
         +"AND (:q='' OR c.CEDULA_PERSONA LIKE :buscar OR c.NOMBRES_PERSONA LIKE :buscar OR c.APELLIDOS_PERSONA LIKE :buscar "
         +"OR CONCAT(RTRIM(c.NOMBRES_PERSONA),' ',RTRIM(c.APELLIDOS_PERSONA)) LIKE :buscar) "
         +"AND (:producto IS NULL OR EXISTS(SELECT 1 FROM dbo.Detallefactura x WHERE x.ID_FACTURA=f.ID_FACTURA AND x.ID_PRODUCTO=:producto)) ";
-    private static final String IMPORTES="COUNT_BIG(*) facturas,SUM(f.SUBTOTAL_FACTURA) subtotal,SUM(f.TOTAL_FACTURA-f.SUBTOTAL_FACTURA) iva,SUM(f.TOTAL_FACTURA) total ";
+    private static final String IMPORTES="COUNT(*) facturas,SUM(f.SUBTOTAL_FACTURA) subtotal,SUM(f.TOTAL_FACTURA-f.SUBTOTAL_FACTURA) iva,SUM(f.TOTAL_FACTURA) total ";
     private static final String CLIENTE="COALESCE(NULLIF(CONCAT(RTRIM(c.NOMBRES_PERSONA),' ',RTRIM(c.APELLIDOS_PERSONA)),' '),'Cliente no disponible')";
     private static final String NOMBRE_EMPLEADO="CONCAT(RTRIM(ep.NOMBRES_PERSONA),' ',RTRIM(ep.APELLIDOS_PERSONA))";
     private static final RowMapper<Fila> FILA=(r,n) -> new Fila(r.getString("id").stripTrailing(),r.getString("nombre").stripTrailing(),r.getString("referencia").stripTrailing(),
@@ -32,10 +32,10 @@ public class ReporteRepository {
     }
     public Resumen resumen(ReporteTipo tipo,ReporteFiltro.Validado f) {
         String sql;
-        if(tipo==ReporteTipo.PRODUCTOS) sql="SELECT COUNT_BIG(DISTINCT f.ID_FACTURA) facturas,COALESCE(SUM(d.SUBTOTAL_DETALLE),0) subtotal,"
+        if(tipo==ReporteTipo.PRODUCTOS) sql="SELECT COUNT(DISTINCT f.ID_FACTURA) facturas,COALESCE(SUM(d.SUBTOTAL_DETALLE),0) subtotal,"
             +"COALESCE(SUM(d.TOTAL_DETALLE-d.SUBTOTAL_DETALLE),0) iva,COALESCE(SUM(d.TOTAL_DETALLE),0) total "
             +BASE+" JOIN dbo.Detallefactura d ON d.ID_FACTURA=f.ID_FACTURA "+WHERE+"AND (:producto IS NULL OR d.ID_PRODUCTO=:producto)";
-        else sql="SELECT COUNT_BIG(*) facturas,COALESCE(SUM(f.SUBTOTAL_FACTURA),0) subtotal,"
+        else sql="SELECT COUNT(*) facturas,COALESCE(SUM(f.SUBTOTAL_FACTURA),0) subtotal,"
             +"COALESCE(SUM(f.TOTAL_FACTURA-f.SUBTOTAL_FACTURA),0) iva,COALESCE(SUM(f.TOTAL_FACTURA),0) total "+BASE+WHERE;
         return jdbc.queryForObject(sql,parametros(f),(r,n) -> new Resumen(r.getLong("facturas"),r.getBigDecimal("subtotal"),r.getBigDecimal("iva"),r.getBigDecimal("total")));
     }
@@ -44,23 +44,23 @@ public class ReporteRepository {
         // Comparaciones directas: evita la clase sintetica $1 de un switch de enum.
         // Si el IDE y Maven recompilan en momentos distintos, esa clase puede faltar.
         if(tipo==ReporteTipo.VENTAS) {
-                if(f.agrupacion().equals("factura")) sql="SELECT TOP (10001) CONVERT(varchar(20),f.ID_FACTURA) id,'Factura #'+CONVERT(varchar(20),f.ID_FACTURA) nombre,"
-                    +"CONCAT(CONVERT(varchar(19),f.FECHA_FACTURA,120),' | ',"+CLIENTE+",' | ',"+NOMBRE_EMPLEADO+") referencia,"
+                if(f.agrupacion().equals("factura")) sql="SELECT cast(f.ID_FACTURA as varchar(20)) id,CONCAT('Factura #',cast(f.ID_FACTURA as varchar(20))) nombre,"
+                    +"CONCAT(to_char(f.FECHA_FACTURA,'YYYY-MM-DD HH24:MI:SS'),' | ',"+CLIENTE+",' | ',"+NOMBRE_EMPLEADO+") referencia,"
                     +"CAST(1 AS bigint) facturas,CAST(NULL AS decimal(38,2)) cantidad,f.SUBTOTAL_FACTURA subtotal,f.TOTAL_FACTURA-f.SUBTOTAL_FACTURA iva,f.TOTAL_FACTURA total "
-                    +BASE+EMPLEADO+WHERE+"ORDER BY f.FECHA_FACTURA,f.ID_FACTURA";
+                    +BASE+EMPLEADO+WHERE+"ORDER BY f.FECHA_FACTURA,f.ID_FACTURA LIMIT 10001";
                 else {
-                    String periodo=f.agrupacion().equals("mes")?"CONVERT(char(7),f.FECHA_FACTURA,126)":"CONVERT(char(10),f.FECHA_FACTURA,23)";
+                    String periodo=f.agrupacion().equals("mes")?"to_char(f.FECHA_FACTURA,'YYYY-MM')":"to_char(f.FECHA_FACTURA,'YYYY-MM-DD')";
                     sql="SELECT "+periodo+" id,"+periodo+" nombre,'' referencia,CAST(NULL AS decimal(38,2)) cantidad,"+IMPORTES+BASE+WHERE+"GROUP BY "+periodo+" ORDER BY id";
                 }
             }
-        else if(tipo==ReporteTipo.PRODUCTOS) sql="SELECT TOP (:limite) CONVERT(varchar(20),d.ID_PRODUCTO) id,MAX(RTRIM(p.NOMBRE_PRODUCTO)) nombre,'' referencia,"
-                +"COUNT_BIG(DISTINCT f.ID_FACTURA) facturas,SUM(d.CANTIDAD) cantidad,SUM(d.SUBTOTAL_DETALLE) subtotal,SUM(d.TOTAL_DETALLE-d.SUBTOTAL_DETALLE) iva,SUM(d.TOTAL_DETALLE) total "
+        else if(tipo==ReporteTipo.PRODUCTOS) sql="SELECT cast(d.ID_PRODUCTO as varchar(20)) id,MAX(RTRIM(p.NOMBRE_PRODUCTO)) nombre,'' referencia,"
+                +"COUNT(DISTINCT f.ID_FACTURA) facturas,SUM(d.CANTIDAD) cantidad,SUM(d.SUBTOTAL_DETALLE) subtotal,SUM(d.TOTAL_DETALLE-d.SUBTOTAL_DETALLE) iva,SUM(d.TOTAL_DETALLE) total "
                 +BASE+" JOIN dbo.Detallefactura d ON d.ID_FACTURA=f.ID_FACTURA JOIN dbo.Producto p ON p.ID_PRODUCTO=d.ID_PRODUCTO "+WHERE
-                +"AND (:producto IS NULL OR d.ID_PRODUCTO=:producto) GROUP BY d.ID_PRODUCTO ORDER BY "+(f.orden().equals("importe")?"total":"cantidad")+" DESC,d.ID_PRODUCTO";
-        else if(tipo==ReporteTipo.EMPLEADOS) sql="SELECT TOP (10001) CONVERT(varchar(20),f.ID_EMPLEADO) id,MAX("+NOMBRE_EMPLEADO+") nombre,'' referencia,CAST(NULL AS decimal(38,2)) cantidad,"
-                +IMPORTES+BASE+EMPLEADO+WHERE+"GROUP BY f.ID_EMPLEADO ORDER BY total DESC,f.ID_EMPLEADO";
-        else if(tipo==ReporteTipo.CLIENTES) sql="SELECT TOP (10001) CONVERT(varchar(20),f.ID_PERSONA) id,MAX("+CLIENTE+") nombre,COALESCE(MAX(RTRIM(c.CEDULA_PERSONA)),'No disponible') referencia,CAST(NULL AS decimal(38,2)) cantidad,"
-                +IMPORTES+BASE+WHERE+"GROUP BY f.ID_PERSONA ORDER BY total DESC,f.ID_PERSONA";
+                +"AND (:producto IS NULL OR d.ID_PRODUCTO=:producto) GROUP BY d.ID_PRODUCTO ORDER BY "+(f.orden().equals("importe")?"total":"cantidad")+" DESC,d.ID_PRODUCTO LIMIT :limite";
+        else if(tipo==ReporteTipo.EMPLEADOS) sql="SELECT cast(f.ID_EMPLEADO as varchar(20)) id,MAX("+NOMBRE_EMPLEADO+") nombre,'' referencia,CAST(NULL AS decimal(38,2)) cantidad,"
+                +IMPORTES+BASE+EMPLEADO+WHERE+"GROUP BY f.ID_EMPLEADO ORDER BY total DESC,f.ID_EMPLEADO LIMIT 10001";
+        else if(tipo==ReporteTipo.CLIENTES) sql="SELECT cast(f.ID_PERSONA as varchar(20)) id,MAX("+CLIENTE+") nombre,COALESCE(MAX(RTRIM(c.CEDULA_PERSONA)),'No disponible') referencia,CAST(NULL AS decimal(38,2)) cantidad,"
+                +IMPORTES+BASE+WHERE+"GROUP BY f.ID_PERSONA ORDER BY total DESC,f.ID_PERSONA LIMIT 10001";
         else if(tipo==ReporteTipo.RESUMEN) return List.of();
         else throw new IllegalArgumentException("Tipo de reporte no válido.");
         return jdbc.query(sql,parametros(f),FILA);

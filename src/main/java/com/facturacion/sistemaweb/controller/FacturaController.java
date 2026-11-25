@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.NoSuchElementException;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.InvalidPropertyException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.*;
@@ -27,8 +28,9 @@ public class FacturaController {
     private final FacturaRegistroService registro;
     private final FacturaEnvios envios;
     private final FacturaCorreoService correo;
-    public FacturaController(FacturaService facturas,FacturaRegistroService registro,FacturaEnvios envios,FacturaCorreoService correo) {
-        this.facturas=facturas;this.registro=registro;this.envios=envios;this.correo=correo;
+    private final ObjectProvider<FacturaSriService> sri;
+    public FacturaController(FacturaService facturas,FacturaRegistroService registro,FacturaEnvios envios,FacturaCorreoService correo,ObjectProvider<FacturaSriService> sri) {
+        this.facturas=facturas;this.registro=registro;this.envios=envios;this.correo=correo;this.sri=sri;
     }
     @InitBinder("facturaForm") void campos(WebDataBinder binder) {
         binder.setAllowedFields("idCliente","idFormaPago","token","lineas[*].idProducto","lineas[*].cantidad",
@@ -61,7 +63,11 @@ public class FacturaController {
         if(!errors.hasErrors()) try {
             var registrada=registro.registrar(session,form);flash.addFlashAttribute("successMessage","Factura registrada correctamente.");
             // La factura ya está confirmada: el correo se intenta una sola vez y nunca la revierte.
-            if(registrada.nueva()) notificar(registrada.id(),flash);
+            if(registrada.nueva()) {
+                var srvSri=sri.getIfAvailable();
+                if(srvSri!=null) try { srvSri.generarOActualizarXml(registrada.id()); } catch(RuntimeException ignored) { }
+                notificar(registrada.id(),flash);
+            }
             return "redirect:/modulos/facturas/"+registrada.id();
         } catch(FacturaException ex) { model.addAttribute("errorMessage",ex.getMessage()); }
         catch(ConcurrencyFailureException ex) { model.addAttribute("errorMessage","Los datos están siendo utilizados por otra operación. Reintenta el envío."); }
@@ -81,7 +87,13 @@ public class FacturaController {
         }
     }
     @GetMapping("/{idFactura}") public String detalle(@PathVariable Long idFactura,Model model) {
-        model.addAttribute("factura",facturas.consultar(idFactura));return "facturas/detalle";
+        model.addAttribute("factura",facturas.consultar(idFactura));
+        var srvSri=sri.getIfAvailable();
+        if(srvSri!=null) {
+            model.addAttribute("sri",srvSri.buscarEstadoSri(idFactura).orElse(null));
+            model.addAttribute("emisor",srvSri.obtenerEmisorActivo());
+        }
+        return "facturas/detalle";
     }
     @ExceptionHandler(NoSuchElementException.class) @ResponseStatus(HttpStatus.NOT_FOUND) @ResponseBody
     public String inexistente() { return "No se encontró la factura solicitada."; }

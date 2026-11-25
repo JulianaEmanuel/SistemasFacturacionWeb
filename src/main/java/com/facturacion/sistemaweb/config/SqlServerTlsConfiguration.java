@@ -17,7 +17,8 @@ public class SqlServerTlsConfiguration {
     }
     private static void validar(Environment env) {
         String url=env.getProperty("spring.datasource.hikari.jdbc-url",env.getProperty("spring.datasource.url",""));
-        if(!url.startsWith("jdbc:sqlserver://") || !valor(url,"encrypt").equalsIgnoreCase("true"))
+        if(!url.startsWith("jdbc:sqlserver://")) return;
+        if(!valor(url,"encrypt").equalsIgnoreCase("true"))
             throw new IllegalStateException("SQL Server requiere una URL JDBC con encrypt=true. Revisa las propiedades externas de DataSource.");
         String trust=valor(url,"trustServerCertificate");
         if(!trust.equalsIgnoreCase("true") && !trust.equalsIgnoreCase("false"))

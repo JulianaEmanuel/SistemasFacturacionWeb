@@ -39,7 +39,6 @@ public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
 			+ "WHERE p.persona.idPersona = :idPersona")
 	boolean existePorPersona(@Param("idPersona") Long idPersona);
 
-	@Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Producto p "
-			+ "WHERE p.ID_PROVEEDOR = :idProveedor) THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+	@Query("SELECT COUNT(pr) > 0 FROM Producto pr WHERE pr.proveedor.idProveedor = :idProveedor")
 	boolean tieneProductos(@Param("idProveedor") Long idProveedor);
 }

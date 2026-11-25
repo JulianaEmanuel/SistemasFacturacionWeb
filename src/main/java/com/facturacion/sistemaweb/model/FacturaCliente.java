@@ -1,6 +1,6 @@
 package com.facturacion.sistemaweb.model;
 import jakarta.persistence.*;
-@Entity @Table(name="\"FacturaCliente\"",schema="dbo")
+@Entity @Table(name="FacturaCliente",schema="dbo")
 public class FacturaCliente {
     @Id @Column(name="ID_FACTURA") private Long idFactura;
     @Column(name="IDENTIFICACION",nullable=false,length=13) private String identificacion;

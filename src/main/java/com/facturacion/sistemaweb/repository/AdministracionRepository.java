@@ -34,6 +34,12 @@ public class AdministracionRepository {
         Integer result = jdbc.execute((ConnectionCallback<Integer>) connection -> {
             if(connection.getAutoCommit())
                 throw new InvalidDataAccessApiUsageException("El bloqueo administrativo requiere una conexión transaccional.");
+            if(connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres")) {
+                try(PreparedStatement ps=connection.prepareStatement("SELECT pg_advisory_xact_lock(hashtext('SistemaFacturacionWeb.Admin'))")) {
+                    ps.execute();
+                    return 0;
+                }
+            }
             // El driver SQL Server usa IMPLICIT_TRANSACTIONS: autoCommit=false no
             // implica @@TRANCOUNT>0. Una lectura de catálogo inicia la transacción
             // física sin escribir datos ni agregar BEGIN/COMMIT anidados.
@@ -68,25 +74,25 @@ public class AdministracionRepository {
         }
     }
     public List<UsuarioResumen> buscar(String q, Integer tipo, Boolean activo) {
-        return jdbc.query(SELECT + "WHERE (u.NOMBRE_USUARIO LIKE ? OR t.TIPO_USUARIO LIKE ?) AND (? IS NULL OR u.ID_TIPO_USUARIO=?) AND (? IS NULL OR u.ACTIVO=?) ORDER BY u.NOMBRE_USUARIO", MAP,
+        return jdbc.query(SELECT + "WHERE (u.NOMBRE_USUARIO LIKE ? OR t.TIPO_USUARIO LIKE ?) AND (cast(? as integer) IS NULL OR u.ID_TIPO_USUARIO=?) AND (cast(? as boolean) IS NULL OR u.ACTIVO=?) ORDER BY u.NOMBRE_USUARIO", MAP,
             "%"+q+"%", "%"+q+"%", tipo,tipo,activo,activo);
     }
     public Optional<UsuarioResumen> buscarId(Long id) { return jdbc.query(SELECT+"WHERE u.ID_USUARIO=?", MAP,id).stream().findFirst(); }
     public Optional<UsuarioResumen> buscarNombre(String nombre) { return jdbc.query(SELECT+"WHERE u.NOMBRE_USUARIO=?", MAP,nombre).stream().findFirst(); }
     public boolean esAdmin(String nombre, String reservado) {
-        return jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Usuario u JOIN dbo.TipoUsuario t ON t.ID_TIPO_USUARIO=u.ID_TIPO_USUARIO WHERE u.NOMBRE_USUARIO=? AND u.ACTIVO=1 AND t.TIPO_USUARIO=?", Long.class,nombre,reservado) == 1;
+        return jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario u JOIN dbo.TipoUsuario t ON t.ID_TIPO_USUARIO=u.ID_TIPO_USUARIO WHERE u.NOMBRE_USUARIO=? AND u.ACTIVO=true AND t.TIPO_USUARIO=?", Long.class,nombre,reservado) == 1;
     }
     public boolean tipoReservado(Integer id, String reservado) {
-        return jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.TipoUsuario WHERE ID_TIPO_USUARIO=? AND TIPO_USUARIO=?", Long.class,id,reservado) > 0;
+        return jdbc.queryForObject("SELECT COUNT(*) FROM dbo.TipoUsuario WHERE ID_TIPO_USUARIO=? AND TIPO_USUARIO=?", Long.class,id,reservado) > 0;
     }
     public long administradoresActivos(String reservado) {
-        return jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Usuario u JOIN dbo.TipoUsuario t ON t.ID_TIPO_USUARIO=u.ID_TIPO_USUARIO WHERE u.ACTIVO=1 AND t.TIPO_USUARIO=?", Long.class,reservado);
+        return jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario u JOIN dbo.TipoUsuario t ON t.ID_TIPO_USUARIO=u.ID_TIPO_USUARIO WHERE u.ACTIVO=true AND t.TIPO_USUARIO=?", Long.class,reservado);
     }
     public boolean nombreDuplicado(String nombre, Long id) {
-        return jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Usuario WHERE NOMBRE_USUARIO=? AND (? IS NULL OR ID_USUARIO<>?)", Long.class,nombre,id,id)>0;
+        return jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario WHERE NOMBRE_USUARIO=? AND (cast(? as bigint) IS NULL OR ID_USUARIO<>?)", Long.class,nombre,id,id)>0;
     }
-    public long totalUsuarios() { return jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Usuario", Long.class); }
-    public boolean tipoEnUso(Integer id) { return jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Usuario WHERE ID_TIPO_USUARIO=?",Long.class,id)>0; }
+    public long totalUsuarios() { return jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario", Long.class); }
+    public boolean tipoEnUso(Integer id) { return jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario WHERE ID_TIPO_USUARIO=?",Long.class,id)>0; }
     public void insertar(String nombre, Integer tipo, boolean activo, byte[] codificada) {
         jdbc.update("INSERT INTO dbo.Usuario (NOMBRE_USUARIO,ID_TIPO_USUARIO,ACTIVO,CONTRASENIA) VALUES (?,?,?,?)",nombre,tipo,activo,codificada);
     }

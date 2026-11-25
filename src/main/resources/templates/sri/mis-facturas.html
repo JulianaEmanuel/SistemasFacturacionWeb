@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Mis comprobantes | Sistema de Facturación Web')}"></head>
+<body class="dashboard-page management-page">
+<div class="app-shell">
+  <aside th:replace="~{fragments/sidebar :: sidebar('mis-facturas')}"></aside>
+  <div class="app-main">
+    <header th:replace="~{fragments/topbar :: topbar('Mis comprobantes (Cliente)', 'CONSULTA')}"></header>
+    <main class="content-area">
+      <section class="page-intro">
+        <p class="eyebrow">BASE DE DATOS COMO CLIENTE</p>
+        <h2>Consulta de Facturas y Comprobantes SRI</h2>
+        <p>Visualiza el encabezado, detalle, XML y RIDE PDF de las facturas registradas a tu nombre en la base de datos.</p>
+      </section>
+
+      <div th:if="${clientePersona == null}" class="alert alert-info">
+        Tu usuario actual (<strong th:text="${cuentaActual}"></strong>) no coincide con un cliente registrado por cédula o correo en <code>dbo.Persona</code>.
+      </div>
+
+      <section th:if="${clientePersona != null}" class="cliente-panel p-4 mb-3">
+        <h3 class="h6 mb-2">Datos del cliente en base de datos</h3>
+        <p class="mb-0">
+          <strong th:text="|${#strings.trim(clientePersona.nombresPersona)} ${#strings.trim(clientePersona.apellidosPersona)}|"></strong>
+          · Cédula/RUC: <span th:text="${#strings.trim(clientePersona.cedulaPersona)}"></span>
+          <span th:if="${clientePersona.correoPersona != null}"> · Correo: <span th:text="${clientePersona.correoPersona}"></span></span>
+        </p>
+      </section>
+
+      <section class="cliente-panel">
+        <div class="table-responsive">
+          <table class="management-table table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Factura #</th>
+                <th>Fecha</th>
+                <th>Subtotal</th>
+                <th>IVA</th>
+                <th>Total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="f : ${facturas}">
+                <td th:text="${f.id}"></td>
+                <td th:text="${#temporals.format(f.fecha,'dd/MM/yyyy HH:mm')}"></td>
+                <td th:text="${f.subtotalVisible()}"></td>
+                <td th:text="${f.ivaVisible()}"></td>
+                <td th:text="${f.totalVisible()}"></td>
+                <td class="d-flex flex-wrap gap-2">
+                  <a class="btn btn-sm btn-outline-success" th:href="@{/modulos/mis-facturas/{id}(id=${f.id})}">Ver detalle</a>
+                  <a class="btn btn-sm btn-outline-dark" th:href="@{/modulos/facturas/{id}/xml(id=${f.id})}">XML</a>
+                  <a class="btn btn-sm btn-outline-danger" target="_blank" th:href="@{/modulos/facturas/{id}/ride(id=${f.id})}">RIDE PDF</a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(facturas)}">
+                <td colspan="6" class="text-muted text-center py-4">No existen facturas registradas para esta cuenta de cliente.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

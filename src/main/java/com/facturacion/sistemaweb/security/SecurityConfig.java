@@ -34,7 +34,8 @@ public class SecurityConfig {
                 .authenticated()
             .requestMatchers("/modulos/productos","/modulos/productos/**",
                 "/modulos/proveedores","/modulos/proveedores/**",
-                "/modulos/empleados","/modulos/empleados/**")
+                "/modulos/empleados","/modulos/empleados/**",
+                "/modulos/sri","/modulos/sri/**")
                 .access(soloAdmin)
             .anyRequest().authenticated())
             .formLogin(f -> f.loginPage("/login").defaultSuccessUrl("/",false).failureUrl("/login?error").permitAll())

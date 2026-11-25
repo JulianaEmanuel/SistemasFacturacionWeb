@@ -20,24 +20,18 @@ public interface PersonaRepository extends JpaRepository<Persona, Long> {
 	@Query("SELECT p FROM Persona p ORDER BY p.apellidosPersona, p.nombresPersona")
 	List<Persona> listarOrdenadas();
 
-	@Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Persona p "
-			+ "WHERE LTRIM(RTRIM(p.CEDULA_PERSONA)) = :cedula) THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+	@Query("SELECT COUNT(p) > 0 FROM Persona p WHERE TRIM(p.cedulaPersona) = :cedula")
 	boolean existeCedula(@Param("cedula") String cedula);
 
-	@Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Persona p "
-			+ "WHERE LTRIM(RTRIM(p.CEDULA_PERSONA)) = :cedula AND p.ID_PERSONA <> :idPersona) "
-			+ "THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+	@Query("SELECT COUNT(p) > 0 FROM Persona p WHERE TRIM(p.cedulaPersona) = :cedula AND p.idPersona <> :idPersona")
 	boolean existeCedulaEnOtraPersona(@Param("cedula") String cedula, @Param("idPersona") Long idPersona);
 
-	@Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Factura f WHERE f.ID_PERSONA = :idPersona) "
-			+ "THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+	@Query("SELECT COUNT(f) > 0 FROM Factura f WHERE f.idPersona = :idPersona")
 	boolean tieneFacturas(@Param("idPersona") Long idPersona);
 
-	@Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Empleado e "
-			+ "WHERE e.ID_PERSONA_EMPLEADO = :idPersona) THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+	@Query("SELECT COUNT(e) > 0 FROM Empleado e WHERE e.persona.idPersona = :idPersona")
 	boolean esEmpleado(@Param("idPersona") Long idPersona);
 
-	@Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Proveedor p "
-			+ "WHERE p.ID_PERSONA_PROVEEDOR = :idPersona) THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+	@Query("SELECT COUNT(pr) > 0 FROM Proveedor pr WHERE pr.persona.idPersona = :idPersona")
 	boolean esProveedor(@Param("idPersona") Long idPersona);
 }

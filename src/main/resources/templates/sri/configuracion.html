@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Configuración SRI | Sistema de Facturación Web')}"></head>
+<body class="dashboard-page management-page">
+<div class="app-shell">
+  <aside th:replace="~{fragments/sidebar :: sidebar('sri-config')}"></aside>
+  <div class="app-main">
+    <header th:replace="~{fragments/topbar :: topbar('Configuración SRI (Emisor)', 'ADMINISTRACIÓN')}"></header>
+    <main class="content-area">
+      <section class="page-intro">
+        <p class="eyebrow">BASE DE DATOS ADMINISTRATIVA</p>
+        <h2>Configuración del Emisor y Ambiente SRI</h2>
+        <p>Estos datos se consultan desde la tabla <code>dbo.EmisorSri</code> para generar el XML, el RIDE y realizar el envío en ambiente de pruebas.</p>
+      </section>
+
+      <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+
+      <section class="cliente-panel p-4">
+        <form method="post" th:action="@{/modulos/sri/configuracion}" th:object="${emisorForm}" novalidate>
+          <div th:if="${#fields.hasAnyErrors()}" class="alert alert-danger" role="alert">
+            <ul class="mb-0"><li th:each="e : ${#fields.allErrors()}" th:text="${e}"></li></ul>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="ruc">RUC Emisor (13 dígitos) *</label>
+              <input class="form-control" id="ruc" th:field="*{ruc}" maxlength="13" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="razonSocial">Razón Social *</label>
+              <input class="form-control" id="razonSocial" th:field="*{razonSocial}" maxlength="300" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="nombreComercial">Nombre Comercial</label>
+              <input class="form-control" id="nombreComercial" th:field="*{nombreComercial}" maxlength="300">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="dirMatriz">Dirección Matriz *</label>
+              <input class="form-control" id="dirMatriz" th:field="*{dirMatriz}" maxlength="300" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="dirEstablecimiento">Dirección Establecimiento *</label>
+              <input class="form-control" id="dirEstablecimiento" th:field="*{dirEstablecimiento}" maxlength="300" required>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label" for="codEstablecimiento">Establecimiento *</label>
+              <input class="form-control" id="codEstablecimiento" th:field="*{codEstablecimiento}" maxlength="3" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" for="puntoEmision">Punto Emisión *</label>
+              <input class="form-control" id="puntoEmision" th:field="*{puntoEmision}" maxlength="3" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="ambiente">Ambiente SRI *</label>
+              <select class="form-select" id="ambiente" th:field="*{ambiente}">
+                <option value="1">1 - PRUEBAS (celcer.sri.gob.ec)</option>
+                <option value="2">2 - PRODUCCIÓN</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="contribuyenteEspecial">Contribuyente Especial</label>
+              <input class="form-control" id="contribuyenteEspecial" th:field="*{contribuyenteEspecial}" maxlength="20" placeholder="Opcional">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="obligadoContabilidad" th:field="*{obligadoContabilidad}">
+                <label class="form-check-label" for="obligadoContabilidad">Obligado contabilidad</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="urlRecepcion">URL WS Recepción SRI *</label>
+              <input class="form-control" id="urlRecepcion" th:field="*{urlRecepcion}" maxlength="300" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="urlAutorizacion">URL WS Autorización SRI *</label>
+              <input class="form-control" id="urlAutorizacion" th:field="*{urlAutorizacion}" maxlength="300" required>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label" for="rutaCertificado">Ruta Certificado Firma Electrónica (.p12 / .pfx)</label>
+              <input class="form-control" id="rutaCertificado" th:field="*{rutaCertificado}" maxlength="500" placeholder="Opcional, ej. C:\certificados\firma.p12">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="claveCertificado">Clave Certificado (.p12)</label>
+              <input class="form-control" type="password" id="claveCertificado" th:field="*{claveCertificado}" maxlength="200" placeholder="Dejar vacío para conservar actual">
+            </div>
+          </div>
+
+          <div class="mt-4 d-flex gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{/modulos/facturas}">Ir a Facturas</a>
+            <button class="btn btn-success" type="submit">Guardar configuración SRI</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

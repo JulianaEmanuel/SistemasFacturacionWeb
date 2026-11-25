@@ -60,3 +60,4 @@ build/
 /data/perfiles/
 /src/main/resources/application-local.properties
 /src/main/resources/application-sqlserver.properties
+/src/main/resources/application-postgres.properties

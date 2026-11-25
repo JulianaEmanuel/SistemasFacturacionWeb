@@ -41,6 +41,13 @@ public class CredencialVersionRepository {
         Integer resultado=jdbc.execute((ConnectionCallback<Integer>) connection -> {
             if(connection.getAutoCommit())
                 throw new InvalidDataAccessApiUsageException("El bloqueo de credenciales requiere una conexión transaccional.");
+            if(connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres")) {
+                try(PreparedStatement ps=connection.prepareStatement("SELECT pg_advisory_xact_lock(hashtext(?))")) {
+                    ps.setString(1,"SistemaFacturacionWeb.Credencial."+id);
+                    ps.execute();
+                    return 0;
+                }
+            }
             try(PreparedStatement state=connection.prepareStatement(
                     "IF @@TRANCOUNT = 0 BEGIN DECLARE @ignored int; SELECT TOP (1) @ignored=object_id FROM sys.objects; END; SELECT @@TRANCOUNT");
                 ResultSet result=state.executeQuery()) {

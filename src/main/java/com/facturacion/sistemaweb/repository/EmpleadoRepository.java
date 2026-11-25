@@ -35,6 +35,6 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
         + "AND (:id IS NULL OR e.idEmpleado <> :id)")
     boolean usuarioAsignado(@Param("usuario") Long usuario, @Param("id") Long id);
 
-    @Query(value = "SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.Factura WHERE ID_EMPLEADO = :id) THEN 1 ELSE 0 END AS bit)", nativeQuery = true)
+    @Query("SELECT COUNT(f) > 0 FROM Factura f WHERE f.empleado.idEmpleado = :id")
     boolean tieneFacturas(@Param("id") Long id);
 }
