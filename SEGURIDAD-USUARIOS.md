@@ -8,43 +8,17 @@ Los IDs se generan en la base y no determinan privilegios.
 
 ## Crear la primera cuenta (operación manual)
 
-Las pruebas no crean usuarios reales. El operador debe ejecutar este procedimiento
-en una consola local interactiva de PowerShell, usando Java 21 y una cuenta Windows
-con acceso a SQL Server. No uses la consola de salida del IDE ni redirecciones de entrada.
-
-1. Compila con Maven: `./mvnw.cmd package`. Si el wrapper de esta instalación falla,
-   utiliza el `mvn.cmd` instalado en el repositorio local de Maven, con Java 21.
-2. Verifica `DB_SERVER`, `DB_PORT`, `DB_NAME` y la ruta de la DLL de autenticación
-   nativa de SQL Server. La base esperada es `SistemaFacturacionWeb`.
-3. Ejecuta, desde la raíz del proyecto:
+Con una base nueva, configura Java 21 y la conexión PostgreSQL siguiendo la [guía local](ARRANQUE-LOCAL.md). Compila con `./mvnw.cmd package -DskipTests` y ejecuta desde una consola interactiva:
 
 ```powershell
-$env:JAVA_HOME = 'C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot'
-& "$env:JAVA_HOME/bin/java.exe" '-Djava.library.path=C:/mssql-jdbc-auth/13.4/x64' -jar target/sistemaweb-0.0.1-SNAPSHOT.jar --bootstrap-admin
+java -jar target/sistemaweb-0.0.1-SNAPSHOT.jar --bootstrap-admin
 ```
 
-El comando fuerza el modo sin servidor web y el perfil `sqlserver`. Solicita nombre,
-contraseña oculta y confirmación. No acepta contraseñas en argumentos, propiedades
-ni variables de entorno. Exige entre 12 y 128 caracteres sin eliminar espacios.
-Sin consola interactiva falla sin crear una cuenta.
-
-La creación del tipo reservado (si falta) y de la cuenta es una única transacción.
-Un bloqueo exclusivo transaccional de SQL Server evita dos creaciones simultáneas.
-Si existe cualquier usuario, la inicialización queda cerrada. No hay endpoint de
-registro público ni procedimiento automático de recuperación administrativa.
-La recuperación local explícita de una cuenta existente se documenta en
-[RECUPERACION-ADMIN.md](RECUPERACION-ADMIN.md); requiere permisos administrativos
-de Windows sobre SQL Server y nunca se ejecuta automáticamente.
-
-Para el certificado autofirmado local, solo si corresponde a tu instalación:
-`$env:DB_TRUST_SERVER_CERTIFICATE = 'true'`. En despliegues utiliza un certificado
-válido. No se ha cambiado `ddl-auto=none` ni el valor predeterminado de confianza.
+El comando ejecuta la creación en una sola transacción y exige una base sin usuarios. Solicita el nombre y la contraseña con entrada oculta. Para una cuenta existente usa [la recuperación administrativa local](RECUPERACION-ADMIN.md).
 
 ## Iniciar la aplicación
 
-```powershell
-& "$env:JAVA_HOME/bin/java.exe" '-Djava.library.path=C:/mssql-jdbc-auth/13.4/x64' -jar target/sistemaweb-0.0.1-SNAPSHOT.jar --spring.profiles.active=sqlserver
-```
+Ejecuta `./mvnw.cmd spring-boot:run` con las variables del ambiente correspondiente.
 
 Abre `http://localhost:8080/login` e introduce la cuenta creada manualmente.
 El cierre de sesión usa POST con CSRF. Los formularios Thymeleaf incluyen el token
@@ -60,7 +34,7 @@ El identificador de sesión cambia al autenticar.
 
 Argon2id utiliza Spring Security Crypto y Bouncy Castle 1.86: 19 MiB de memoria,
 2 iteraciones, paralelismo 1, sal aleatoria de 16 bytes y salida de 32 bytes.
-La representación codificada completa se almacena como UTF-8 en `VARBINARY(8000)`.
+La representación codificada completa se almacena como UTF-8 en `BYTEA`.
 No existe compatibilidad con el SHA-256 del sistema original. Los parámetros deben
 revisarse con mediciones en el servidor destino antes de un despliegue de producción.
 
@@ -77,15 +51,13 @@ versión de credencial y revocan los enlaces de recuperación pendientes; el fil
 invalida las sesiones anteriores en su siguiente solicitud. Una cuenta desactivada
 no puede utilizar sus sesiones mientras permanezca inactiva.
 
-Todas las modificaciones administrativas y la inicialización adquieren el mismo
-`sp_getapplock`, exclusivo y con propietario Transaction. Después del bloqueo se
+Todas las modificaciones administrativas y la inicialización adquieren el mismo bloqueo transaccional y
 revisan nuevamente los permisos y el número de administradores activos. El tipo
 reservado no se puede renombrar ni eliminar. No se puede desactivar ni cambiar a
 otro tipo al último administrador activo. Las escrituras directas externas a la
 aplicación deben respetar estas invariantes: no hay nuevas restricciones SQL.
 
-La adquisición exige una transacción Spring existente. Con el driver SQL Server,
-`autoCommit=false` puede coexistir con `@@TRANCOUNT=0` antes de la primera lectura
+La adquisición exige una transacción Spring existente. Con el driver PostgreSQL,
 de tabla. El repositorio inicia entonces la transacción física mediante una lectura
 de catálogo sin escrituras y verifica su estado antes de solicitar el bloqueo.
 La llamada usa `CallableStatement` y lee explícitamente el valor RETURN:
@@ -93,7 +65,7 @@ La llamada usa `CallableStatement` y lee explícitamente el valor RETURN:
 Un -999 no se presenta como concurrencia. No se emiten commits parciales ni se
 libera el bloqueo antes de terminar la transacción de creación o modificación.
 
-Los nombres duplicados se comprueban mediante igualdad en SQL Server y, por ello,
+Los nombres duplicados se comprueban mediante igualdad en PostgreSQL y, por ello,
 con la intercalación real de las columnas. Un tipo asociado a usuarios no se elimina.
 La desactivación conserva empleados, personas y facturas. Empleados sigue ofreciendo
 solo usuarios activos no asignados para nuevas asociaciones y permite conservar el
@@ -101,10 +73,7 @@ usuario actual inactivo.
 
 ## Recuperación de contraseña
 
-La recuperación web requiere la migración `db/migraciones/004_recuperacion_contrasenia.sql`,
-que agrega únicamente columnas nullable y tablas nuevas. No rellena correos, no cambia
-contraseñas ni modifica usuarios existentes. Después de aplicarla, reinicia la aplicación:
-las sesiones que existían antes del versionado deben volver a autenticarse.
+El esquema PostgreSQL incluye las tablas de seguridad. Después de incorporar el versionado en una instalación existente, reinicia la aplicación para que las sesiones antiguas se autentiquen otra vez.
 
 Cada usuario debe registrar y verificar su propio correo desde **Mi perfil → Seguridad
 de la cuenta**. No se importan correos de Persona ni se considera verificada una dirección
@@ -142,11 +111,11 @@ CSRF permanece habilitado en los formularios públicos y autenticados.
 ## Pruebas
 
 La suite prueba escrituras con mocks, incluida la inicialización. Las pruebas de
-integración con SQL Server solo consultan datos no sensibles. Nunca ejecutes el
+integración con PostgreSQL solo consultan datos no sensibles. Nunca ejecutes el
 comando `--bootstrap-admin` como preparación automática de pruebas.
 
 ```powershell
-./mvnw.cmd test '-Dspring.profiles.active=sqlserver' '-DargLine=-Djava.library.path=C:/mssql-jdbc-auth/13.4/x64'
+.\mvnw.cmd test
 ```
 
 Los cambios de las pruebas existentes agregan sesiones simuladas y CSRF; no deshabilitan
@@ -186,4 +155,3 @@ Archivos existentes modificados:
   `ProveedorControllerIntegrationTest.java`: sesión simulada y tokens CSRF.
 
 `Usuario.java`, `UsuarioRepository.java`, los servicios/controladores de los módulos
-existentes y `application-sqlserver.properties` permanecen sin cambios.

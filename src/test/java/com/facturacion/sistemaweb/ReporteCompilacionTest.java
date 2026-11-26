@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import com.facturacion.sistemaweb.model.ReporteFiltro;
 import com.facturacion.sistemaweb.model.ReporteTipo;
 
-/** Reproduce la ausencia de ReporteRepository$1 sin borrar archivos ni abrir SQL Server. */
+/** Reproduce la ausencia de ReporteRepository$1 sin borrar archivos ni abrir PostgreSQL. */
 class ReporteCompilacionTest {
     @ParameterizedTest
     @EnumSource(ReporteTipo.class)

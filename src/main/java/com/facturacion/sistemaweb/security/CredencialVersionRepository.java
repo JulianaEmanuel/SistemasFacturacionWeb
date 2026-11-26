@@ -7,16 +7,11 @@ import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
-import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Types;
 
 /** Detecta de forma compatible la migración de versionado y revoca sesiones/tokenes. */
-@Repository @Profile({"sqlserver", "postgres"})
+@Repository @Profile("postgres")
 public class CredencialVersionRepository {
-    @org.springframework.beans.factory.annotation.Value("#{environment.matchesProfiles('postgres')}")
-    private boolean postgres;
     private final JdbcTemplate jdbc;
     private volatile Boolean disponible;
     private volatile Boolean tablaRecuperacionDisponible;
@@ -28,7 +23,7 @@ public class CredencialVersionRepository {
         if(cache==null) synchronized(this) {
             cache=disponible;
             if(cache==null) disponible=cache=Integer.valueOf(1).equals(jdbc.queryForObject(
-                "SELECT CASE WHEN COL_LENGTH(N'dbo.Usuario',N'VERSION_CREDENCIAL') IS NULL THEN 0 ELSE 1 END",Integer.class));
+                "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='dbo' AND table_name='usuario' AND column_name='version_credencial'",Integer.class));
         }
         return cache;
     }
@@ -40,31 +35,16 @@ public class CredencialVersionRepository {
     }
 
     public void bloquearCuenta(long id) {
-        Integer resultado=jdbc.execute((ConnectionCallback<Integer>) connection -> {
-            if(connection.getAutoCommit())
+        jdbc.execute((ConnectionCallback<Void>) connection -> {
+            if (connection.getAutoCommit()) {
                 throw new InvalidDataAccessApiUsageException("El bloqueo de credenciales requiere una conexión transaccional.");
-            if(connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres")) {
-                try(PreparedStatement ps=connection.prepareStatement("SELECT pg_advisory_xact_lock(hashtext(?))")) {
-                    ps.setString(1,"SistemaFacturacionWeb.Credencial."+id);
-                    ps.execute();
-                    return 0;
-                }
             }
-            try(PreparedStatement state=connection.prepareStatement(
-                    "IF @@TRANCOUNT = 0 BEGIN DECLARE @ignored int; SELECT TOP (1) @ignored=object_id FROM sys.objects; END; SELECT @@TRANCOUNT");
-                ResultSet result=state.executeQuery()) {
-                if(!result.next() || result.getInt(1)<1)
-                    throw new InvalidDataAccessApiUsageException("SQL Server no inició la transacción requerida para bloquear credenciales.");
+            try (PreparedStatement statement = connection.prepareStatement("SELECT pg_advisory_xact_lock(hashtext(?))")) {
+                statement.setString(1, "SistemaFacturacionWeb.Credencial." + id);
+                statement.execute();
             }
-            try(CallableStatement call=connection.prepareCall("{? = call sys.sp_getapplock(?, ?, ?, ?)}")) {
-                call.registerOutParameter(1,Types.INTEGER);
-                call.setString(2,"SistemaFacturacionWeb.Credencial."+id);
-                call.setString(3,"Exclusive");call.setString(4,"Transaction");call.setInt(5,10000);
-                call.execute();int code=call.getInt(1);return call.wasNull()?null:code;
-            }
+            return null;
         });
-        if(resultado==null || resultado<0)
-            throw new DataAccessResourceFailureException("No se pudo adquirir el bloqueo de credenciales de la cuenta.");
     }
 
     public boolean sesionVigente(long id,Collection<String> autoridades) {
@@ -83,7 +63,7 @@ public class CredencialVersionRepository {
 
     public void revocarRecuperaciones(long id) {
         if(tablaRecuperacionDisponible()) jdbc.update("UPDATE dbo.RecuperacionContrasenia SET REVOCADO_EN="
-            +(postgres ? "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" : "SYSUTCDATETIME()")+" "
+            + "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') "
             +"WHERE ID_USUARIO=? AND USADO_EN IS NULL AND REVOCADO_EN IS NULL",id);
     }
 
@@ -92,8 +72,7 @@ public class CredencialVersionRepository {
         if(cache==null) synchronized(this) {
             cache=tablaRecuperacionDisponible;
             if(cache==null) tablaRecuperacionDisponible=cache=Integer.valueOf(1).equals(jdbc.queryForObject(
-                postgres ? "SELECT CASE WHEN to_regclass('dbo.recuperacioncontrasenia') IS NULL THEN 0 ELSE 1 END"
-                    : "SELECT CASE WHEN OBJECT_ID(N'dbo.RecuperacionContrasenia',N'U') IS NULL THEN 0 ELSE 1 END",Integer.class));
+                "SELECT CASE WHEN to_regclass('dbo.recuperacioncontrasenia') IS NULL THEN 0 ELSE 1 END",Integer.class));
         }
         return cache;
     }

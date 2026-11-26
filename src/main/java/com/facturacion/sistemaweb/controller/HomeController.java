@@ -17,7 +17,7 @@ public class HomeController {
 		if(servicio!=null) {
 			try {model.addAttribute("panel",servicio.consultar());}
 			catch(org.springframework.dao.DataAccessException ex) {model.addAttribute("panelAviso","No se pudieron consultar los indicadores. Vuelve a intentarlo.");}
-		} else model.addAttribute("panelAviso","Los indicadores estarán disponibles al conectar SQL Server.");
+		} else model.addAttribute("panelAviso","Los indicadores estarán disponibles al conectar PostgreSQL.");
 		return "index";
 	}
 }

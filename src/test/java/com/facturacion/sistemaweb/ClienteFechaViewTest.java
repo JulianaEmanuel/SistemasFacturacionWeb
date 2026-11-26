@@ -22,7 +22,7 @@ import com.facturacion.sistemaweb.model.Persona;
 import com.facturacion.sistemaweb.service.PersonaService;
 
 @WebMvcTest(controllers = ClienteController.class)
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @org.springframework.security.test.context.support.WithMockUser
 @org.springframework.context.annotation.Import(com.facturacion.sistemaweb.security.SecurityConfig.class)
 class ClienteFechaViewTest {

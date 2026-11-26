@@ -30,7 +30,7 @@ class BootstrapAutenticacionRoundTripTest {
         JdbcTemplate jdbc=mock(JdbcTemplate.class);
         var usuarios=spy(new AdministracionRepository(jdbc));
         doNothing().when(usuarios).bloquear();
-        when(jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Usuario",Long.class)).thenReturn(0L);
+        when(jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario",Long.class)).thenReturn(0L);
         var tipos=mock(TipoUsuarioRepository.class);
         var access=mock(AdminAccess.class);when(access.reservado()).thenReturn("ADMINISTRADOR");
         when(tipos.buscar("")).thenReturn(List.of());

@@ -20,7 +20,7 @@ import com.facturacion.sistemaweb.security.*;
 import com.facturacion.sistemaweb.service.RecuperacionContraseniaService;
 
 @WebMvcTest({RecuperacionController.class,AccesoController.class})
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @Import({SecurityConfig.class,CapturaVistasConfig.class})
 @AutoConfigureMockMvc(print=MockMvcPrint.NONE)
 class RecuperacionSecurityTest {

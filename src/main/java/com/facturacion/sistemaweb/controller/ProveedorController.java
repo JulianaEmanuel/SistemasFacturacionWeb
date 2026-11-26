@@ -28,7 +28,7 @@ import com.facturacion.sistemaweb.service.ProveedorService;
 import jakarta.validation.Valid;
 
 @Controller
-@Profile({"sqlserver", "postgres"})
+@Profile("postgres")
 @RequestMapping("/modulos/proveedores")
 public class ProveedorController {
 

@@ -11,7 +11,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.model.ReporteResultado.*;
 import com.facturacion.sistemaweb.repository.ReporteRepository;
 
-@Service @Profile({"sqlserver", "postgres"}) @PreAuthorize("isAuthenticated()")
+@Service @Profile("postgres") @PreAuthorize("isAuthenticated()")
 @Transactional(readOnly=true,isolation=Isolation.SERIALIZABLE,timeout=30)
 public class ReporteService {
     public static final int MAX_FILAS=10000;

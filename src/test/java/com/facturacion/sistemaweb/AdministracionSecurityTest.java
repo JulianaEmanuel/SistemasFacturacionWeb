@@ -24,7 +24,7 @@ import com.facturacion.sistemaweb.security.*;
 import com.facturacion.sistemaweb.service.*;
 
 @WebMvcTest({AdministracionController.class,AccesoController.class,HomeController.class,ModuleController.class})
-@Import({SecurityConfig.class,ClaveSegura.class,CapturaVistasConfig.class}) @ActiveProfiles("sqlserver")
+@Import({SecurityConfig.class,ClaveSegura.class,CapturaVistasConfig.class}) @ActiveProfiles("postgres")
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc(print=org.springframework.boot.webmvc.test.autoconfigure.MockMvcPrint.NONE)
 class AdministracionSecurityTest {
     @Test void listaDeTiposYPantallaDePermisosSeRenderizan() throws Exception {

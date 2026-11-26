@@ -8,7 +8,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import com.facturacion.sistemaweb.repository.*;
 
-@SpringBootTest @ActiveProfiles("sqlserver") @Transactional(readOnly=true)
+@SpringBootTest @ActiveProfiles("postgres") @Transactional(readOnly=true)
 class AdministracionReadOnlyIntegrationTest {
     @Autowired AdministracionRepository usuarios;
     @Autowired TipoUsuarioRepository tipos;

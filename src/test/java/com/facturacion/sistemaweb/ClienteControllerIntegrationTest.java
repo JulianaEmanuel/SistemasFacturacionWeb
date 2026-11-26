@@ -18,13 +18,17 @@ import com.facturacion.sistemaweb.repository.PersonaRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @org.springframework.security.test.context.support.WithMockUser(authorities={"USER","ACCOUNT_ID_1"})
 @org.springframework.context.annotation.Import(CapturaVistasConfig.class)
 class ClienteControllerIntegrationTest {
     @org.springframework.test.context.bean.override.mockito.MockitoBean
     com.facturacion.sistemaweb.repository.AdministracionRepository sesiones;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    com.facturacion.sistemaweb.security.CredencialVersionRepository versiones;
     @org.junit.jupiter.api.BeforeEach void sesionAutenticada() {
+        org.mockito.Mockito.when(versiones.sesionVigente(org.mockito.ArgumentMatchers.eq(1L),org.mockito.ArgumentMatchers.anyCollection()))
+            .thenReturn(true);
         org.mockito.Mockito.when(sesiones.buscarNombre(org.mockito.ArgumentMatchers.anyString()))
             .thenReturn(java.util.Optional.of(new com.facturacion.sistemaweb.model.UsuarioResumen(1L, 1, "user", "OPERADOR", true)));
     }
@@ -36,7 +40,7 @@ class ClienteControllerIntegrationTest {
 	private PersonaRepository personaRepository;
 
 	@Test
-	void listaClientesLeePersonasDesdeSqlServer() throws Exception {
+	void listaClientesLeePersonasDesdePostgreSql() throws Exception {
 		mockMvc.perform(get("/modulos/clientes"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("clientes/lista"))

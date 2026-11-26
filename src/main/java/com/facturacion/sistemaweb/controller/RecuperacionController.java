@@ -12,7 +12,7 @@ import com.facturacion.sistemaweb.security.CorreoRecuperacion;
 import com.facturacion.sistemaweb.service.RecuperacionContraseniaService;
 import com.facturacion.sistemaweb.service.AdministracionException;
 
-@Controller @Profile({"sqlserver", "postgres"})
+@Controller @Profile("postgres")
 public class RecuperacionController {
     private static final Logger log=LoggerFactory.getLogger(RecuperacionController.class);
     private static final String MENSAJE_PUBLICO="Si existe una cuenta activa con ese correo verificado, recibirás un enlace de seguridad.";

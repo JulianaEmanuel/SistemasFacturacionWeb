@@ -11,7 +11,7 @@ import com.facturacion.sistemaweb.model.*;
  * Registra en una sola transacción la persona, su cuenta de acceso y el empleado.
  * Si falla cualquier paso se revierte todo: no quedan personas ni cuentas huérfanas.
  */
-@Service @Profile({"sqlserver", "postgres"})
+@Service @Profile("postgres")
 @PreAuthorize("@adminAccess.allowed(authentication)")
 public class CuentaEmpleadoService {
     private final PersonaService personas;

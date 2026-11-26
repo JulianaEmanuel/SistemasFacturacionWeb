@@ -44,6 +44,7 @@ build/
 *~
 *.jar
 *.bak
+*.dump
 *.trn
 *.mdf
 *.ldf
@@ -59,6 +60,5 @@ build/
 /.mvn/maven.config
 /data/perfiles/
 /src/main/resources/application-local.properties
-/src/main/resources/application-sqlserver.properties
 /src/main/resources/application-postgres-local.properties
 /data/pruebas/

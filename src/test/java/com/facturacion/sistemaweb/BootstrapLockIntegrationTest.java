@@ -12,38 +12,29 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.facturacion.sistemaweb.repository.AdministracionRepository;
 
 /** Solo estado de transacciones, SELECT y bloqueos temporales; nunca DML ni credenciales. */
-@SpringBootTest @ActiveProfiles("sqlserver")
+@SpringBootTest @ActiveProfiles("postgres")
 class BootstrapLockIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;
     @Autowired AdministracionRepository repository;
-    private int trancount() { return jdbc.queryForObject("SELECT @@TRANCOUNT",Integer.class); }
-    private String lockMode() {
-        return jdbc.queryForObject("SELECT APPLOCK_MODE('public','SistemaFacturacionWeb.Admin','Transaction')",String.class);
+    private boolean retenido() {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+            "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND granted)",
+            Boolean.class));
     }
-    @Test void reproduceMenos999YCorrigeLaPrimeraOperacionDeLaTransaccion() {
+    @Test void conservaElBloqueoHastaFinalizarLaTransaccion() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            assertFalse(jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<Boolean>) c -> c.getAutoCommit()));
-            assertEquals(0,trancount());
-            Integer antiguo=jdbc.queryForObject("DECLARE @r int; EXEC @r=sys.sp_getapplock @Resource='SistemaFacturacionWeb.LockRegression', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=0; SELECT @r",Integer.class);
-            assertEquals(-999,antiguo);assertEquals(0,trancount());
             repository.bloquear();
-            assertEquals(1,trancount());assertEquals("Exclusive",lockMode());
-            repository.totalUsuarios();assertEquals("Exclusive",lockMode());
-            status.setRollbackOnly();
+            assertTrue(retenido());
+            repository.totalUsuarios();
+            assertTrue(retenido());
         });
         assertDisponible();
     }
     private void assertDisponible() {
-        assertEquals(1,jdbc.queryForObject("SELECT APPLOCK_TEST('public','SistemaFacturacionWeb.Admin','Exclusive','Session')",Integer.class));
-    }
-    @Test void conservaTransaccionExistenteYLiberaEnCommit() {
-        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Usuario",Long.class);
-            int before=trancount();assertEquals(1,before);repository.bloquear();assertEquals(before,trancount());
-            assertEquals("Exclusive",lockMode());
-        });
-        assertDisponible();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+            assertEquals(Boolean.TRUE,jdbc.queryForObject(
+                "SELECT pg_try_advisory_xact_lock(hashtext('SistemaFacturacionWeb.Admin'))",Boolean.class)));
     }
     @Test void exigeTransaccionExterna() {
         assertThrows(IllegalTransactionStateException.class,repository::bloquear);
@@ -62,9 +53,9 @@ class BootstrapLockIntegrationTest {
             assertTrue(firstAcquired.await(5,TimeUnit.SECONDS));
             var second=pool.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
                 // Session consulta disponibilidad sin requerir una transacción física previa.
-                assertEquals(0,jdbc.queryForObject("SELECT APPLOCK_TEST('public','SistemaFacturacionWeb.Admin','Exclusive','Session')",Integer.class));
+                assertEquals(Boolean.FALSE,jdbc.queryForObject("SELECT pg_try_advisory_xact_lock(hashtext('SistemaFacturacionWeb.Admin'))",Boolean.class));
                 secondAttempt.countDown();repository.bloquear();secondAcquired.countDown();
-                assertEquals("Exclusive",lockMode());status.setRollbackOnly();
+                assertTrue(retenido());status.setRollbackOnly();
             }));
             assertTrue(secondAttempt.await(5,TimeUnit.SECONDS));
             assertFalse(secondAcquired.await(200,TimeUnit.MILLISECONDS));

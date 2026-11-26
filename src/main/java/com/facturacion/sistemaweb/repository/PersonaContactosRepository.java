@@ -8,7 +8,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.FacturacionSchema;
 
 /** Mapeo explícito de las columnas adicionales para poder leer también el esquema anterior. */
-@Repository @Profile({"sqlserver", "postgres"})
+@Repository @Profile("postgres")
 public class PersonaContactosRepository {
     private final NamedParameterJdbcTemplate jdbc;private final FacturacionSchema schema;
     public PersonaContactosRepository(NamedParameterJdbcTemplate jdbc,FacturacionSchema schema){this.jdbc=jdbc;this.schema=schema;}

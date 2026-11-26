@@ -22,7 +22,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.security.SecurityConfig;
 import com.facturacion.sistemaweb.service.*;
 
-@WebMvcTest(FacturaController.class) @ActiveProfiles("sqlserver")
+@WebMvcTest(FacturaController.class) @ActiveProfiles("postgres")
 @Import({SecurityConfig.class,FacturaEnvios.class,CapturaVistasConfig.class}) @AutoConfigureMockMvc(print=MockMvcPrint.NONE)
 class FacturaControllerTest {
     @Autowired MockMvc mvc;

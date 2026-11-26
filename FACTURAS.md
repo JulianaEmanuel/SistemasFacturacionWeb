@@ -33,20 +33,7 @@ También guarda una copia de identificación, nombre y contacto en `FacturaClien
 Las facturas anteriores siguen consultables: no se les asigna pago ni se inventa una copia
 histórica. Si no tienen esos datos, el detalle los identifica como no registrados.
 
-Para desplegar el esquema, con la aplicación detenida y solo después de autorizar los
-cambios en SQL Server, ejecutar en SSMS los archivos completos en este orden:
-
-1. `db/migraciones/001_contacto_persona.sql`
-2. `db/migraciones/002_formas_pago.sql`
-3. `db/migraciones/003_factura_cliente.sql`
-4. `db/migraciones/004_recuperacion_contrasenia.sql`
-5. `db/migraciones/005_detalle_pago.sql` (aplicada en la base local el 2026-11-11, con respaldo
-   previo `SistemaFacturacionWeb_pre005_20261111.bak` en la carpeta Backup de SQL Server)
-
-Reiniciar la aplicación después de completar las migraciones. Son scripts manuales;
-`spring.jpa.hibernate.ddl-auto=none` se conserva. No ejecutar `DATOS_PRUEBA.sql` como
-migración: requiere autorización aparte y por defecto solo presenta una vista previa.
-Esta etapa no incluye descuentos, anulación ni integración con el SRI.
+El esquema PostgreSQL incluye las tablas de pagos, contactos y comprobantes electrónicos. Para una base nueva sigue la [guía local](ARRANQUE-LOCAL.md). Ejecuta los datos ficticios solo en pruebas.
 
 ## Registrar manualmente una factura de prueba
 
@@ -56,7 +43,6 @@ que puedas tener abiertas. Cuando decidas reiniciar la aplicación:
 
 ```powershell
 $java21 = 'C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot/bin/java.exe'
-& $java21 '-Djava.library.path=C:/mssql-jdbc-auth/13.4/x64' -jar target/facturas-cantidad/sistemaweb-0.0.1-SNAPSHOT.jar --spring.profiles.active=sqlserver
 ```
 
 Conserva la configuración de conexión y certificado de tu entorno. Cierra antes la
@@ -65,7 +51,7 @@ instancia anterior si está utilizando el puerto 8080.
 Esta acción sí crea un documento real en la base configurada. Las pruebas automáticas
 no realizan esta acción.
 
-1. Inicia la aplicación con Java 21 y el perfil `sqlserver` e inicia sesión.
+1. Inicia la aplicación con Java 21 y el perfil `postgres` e inicia sesión.
 2. Comprueba que tu usuario tenga un empleado asociado en Gestión de Empleados.
    Si falta, un administrador debe asociar una Persona y ese Usuario activo.
 3. Comprueba que exista un cliente y al menos un producto.
@@ -74,7 +60,7 @@ no realizan esta acción.
    dos decimales. Usa Agregar producto para añadir filas. Si repites un producto,
    sus cantidades se acumulan tanto en JavaScript como en el servicio.
 6. Revisa la previsualización y pulsa Registrar factura. La operación toma los precios
-   y porcentajes de IVA actuales de SQL Server; la fecha se genera en America/Guayaquil.
+   y porcentajes de IVA actuales de PostgreSQL; la fecha se genera en America/Guayaquil.
 7. Se abrirá el documento registrado. Puedes imprimirlo mediante el botón Imprimir.
 
 Las facturas emitidas no se borran desde este módulo: utiliza una base destinada a
@@ -175,9 +161,7 @@ Vistas y script:
 - `src/main/resources/templates/facturas/lista.html`, `formulario.html`, `detalle.html`.
 - `src/main/resources/templates/clientes/formulario.html`, `clientes/lista.html`.
 - `src/main/resources/static/js/facturas.js`, `factura-contacto-pago.js`.
-- `db/migraciones/001_contacto_persona.sql`, `002_formas_pago.sql`,
-  `003_factura_cliente.sql`, `004_recuperacion_contrasenia.sql`, `005_detalle_pago.sql`
-  (aplicadas en la base local; respaldo previo a 005: `SistemaFacturacionWeb_pre005_20261111.bak`).
+- `db/esquema_postgresql.sql`.
 
 Pruebas nuevas:
 
@@ -187,12 +171,11 @@ Pruebas nuevas:
   `src/test/js/factura-contacto-pago.test.cjs`.
 
 Se mantienen Spring Security, CSRF, los permisos actuales y el arranque existente
-mediante `.\mvnw.cmd spring-boot`. Las migraciones 001 a 005 están aplicadas en la base local y se conserva
-`spring.jpa.hibernate.ddl-auto=none`.
+mediante `.\mvnw.cmd spring-boot:run`. Se conserva `spring.jpa.hibernate.ddl-auto=none`.
 
 ## Ejecutar pruebas
 
-Las pruebas focalizadas de la etapa 1 no conectan a SQL Server:
+Las pruebas focalizadas de la etapa 1 no conectan a PostgreSQL:
 
 ```powershell
 .\mvnw.cmd '-Dtest=FacturaServiceTest,FacturaControllerTest,ContactosEtapa1Test,DatosPruebaScriptTest,PersonaFormValidationTest,ClienteFechaViewTest' test
@@ -200,7 +183,7 @@ node --test src/test/js/facturas.test.cjs
 node --test src/test/js/factura-contacto-pago.test.cjs
 ```
 
-La suite completa contiene pruebas de integración que requieren SQL Server; no se deben
+La suite completa contiene pruebas de integración que requieren PostgreSQL; no se deben
 ejecutar contra la base real sin autorización y preparación expresa del entorno de pruebas.
 
 ## Detalle de la forma de pago (migración 005)

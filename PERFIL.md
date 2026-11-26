@@ -6,7 +6,7 @@ Selecciona un JPG o PNG y pulsa **Guardar foto**. Se muestra una vista previa an
 
 Las imágenes persisten en `data/perfiles/`, relativa al directorio desde el que se inicia la aplicación. Esa carpeta está excluida de Git y no se sirve como recurso público. Conserva y respalda esa carpeta si mueves el proyecto. Opcionalmente se puede configurar una ruta persistente con `PROFILE_PHOTO_DIR`; no es necesario para el arranque local habitual con `.\mvnw.cmd spring-boot:run`.
 
-No se modifica SQL Server ni se agregan columnas. La imagen se vincula internamente al ID de la cuenta autenticada; cambiar su nombre no pierde la foto. El nombre original del archivo no se utiliza en el almacenamiento. Los nombres de archivo son identificadores derivados, no contraseñas ni hashes de contraseña.
+Las fotos se almacenan en archivos por cuenta. La imagen se vincula internamente al ID de la cuenta autenticada; cambiar su nombre no pierde la foto. El nombre original del archivo no se utiliza en el almacenamiento. Los nombres de archivo son identificadores derivados, no contraseñas ni hashes de contraseña.
 
 Rutas autenticadas: `GET /perfil`, `GET /perfil/foto`, `POST /perfil/foto`. Cada cuenta consulta y cambia únicamente su propia foto; no se reciben IDs de otros usuarios. La carga exige CSRF. Las respuestas de imágenes usan `Cache-Control: no-store` para evitar mostrar la foto de otra sesión en un navegador compartido. Los permisos de administración y el cierre de sesión siguen funcionando igual.
 

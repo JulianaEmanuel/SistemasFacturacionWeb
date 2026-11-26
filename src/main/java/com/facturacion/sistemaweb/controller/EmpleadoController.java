@@ -15,7 +15,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.*;
 
 @Controller
-@Profile({"sqlserver", "postgres"})
+@Profile("postgres")
 @RequestMapping("/modulos/empleados")
 public class EmpleadoController {
     private final EmpleadoService servicio;

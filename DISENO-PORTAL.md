@@ -84,7 +84,7 @@ Creados:
 
 283 pruebas Maven y 27 pruebas JavaScript aprobadas, sin fallos ni omisiones.
 Las pruebas incluyen CSRF, bloqueo anónimo, permisos, cuatro accesos, cálculos,
-estados vacíos, verificación del ojo e indicadores contrastados con SQL Server.
+estados vacíos, verificación del ojo e indicadores contrastados con la base anterior.
 Todas las pruebas de integración nuevas son de solo lectura.
 
 Edge headless verificó escritorio 1440px y móviles 390px/320px, ausencia de

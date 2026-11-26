@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 import com.facturacion.sistemaweb.repository.InicioRepository;
 
-@Service @Profile({"sqlserver", "postgres"}) @PreAuthorize("isAuthenticated()")
+@Service @Profile("postgres") @PreAuthorize("isAuthenticated()")
 @Transactional(readOnly=true,isolation=Isolation.SERIALIZABLE,timeout=15)
 public class InicioService {
     public record Actividad(long id,LocalDateTime fecha,String cliente,BigDecimal total) {

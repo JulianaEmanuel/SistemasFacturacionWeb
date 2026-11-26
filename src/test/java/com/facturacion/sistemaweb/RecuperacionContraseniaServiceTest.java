@@ -83,11 +83,10 @@ class RecuperacionContraseniaServiceTest {
         String consultaBloqueada=sql.getAllValues().stream().filter(s->s.contains("t.ID_RECUPERACION")).findFirst().orElseThrow();
         assertTrue(consultaBloqueada.contains("USADO_EN IS NULL"));
         assertTrue(consultaBloqueada.contains("REVOCADO_EN IS NULL"));
-        assertTrue(consultaBloqueada.contains("EXPIRA_EN>SYSUTCDATETIME()"));
+        assertTrue(consultaBloqueada.contains("EXPIRA_EN>(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')"));
     }
 
     @Test void cambiarClavePropiaActualizaSoloLaCuentaAutenticadaYRevocaSesiones() {
-        org.springframework.test.util.ReflectionTestUtils.setField(service,"postgres",true);
         byte[] anterior="hash-anterior".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         byte[] nueva={1,2,3};
         when(jdbc.query(contains("ACTIVO=true"),any(RowMapper.class),eq(44L),eq("juliana")))

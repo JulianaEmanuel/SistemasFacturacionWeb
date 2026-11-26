@@ -16,7 +16,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.*;
 
 @WebMvcTest(EmpleadoController.class)
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @org.springframework.security.test.context.support.WithMockUser
 @org.springframework.context.annotation.Import({com.facturacion.sistemaweb.security.SecurityConfig.class,CapturaVistasConfig.class})
 class EmpleadoControllerTest {

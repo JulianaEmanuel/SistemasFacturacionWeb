@@ -15,7 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.*;
 
-@Controller @Profile({"sqlserver", "postgres"})
+@Controller @Profile("postgres")
 @PreAuthorize("@adminAccess.allowed(authentication)")
 public class AdministracionController {
     private final AdministracionService service;

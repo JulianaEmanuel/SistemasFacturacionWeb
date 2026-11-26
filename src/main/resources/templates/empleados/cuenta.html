@@ -82,7 +82,7 @@
                         <div class="mb-3">
                             <label class="form-label" for="idTipo">Tipo de usuario (solo para el rol Empleado)</label>
                             <select id="idTipo" class="form-select" th:field="*{idTipo}" th:classappend="${#fields.hasErrors('idTipo')} ? 'is-invalid' : ''">
-                                <option th:if="${#lists.isEmpty(tipos)}" value="">EMPLEADO (se creará automáticamente)</option>
+                                <option value="">EMPLEADO (predeterminado)</option>
                                 <option th:each="t : ${tipos}" th:value="${t.id}" th:text="${#strings.trim(t.nombre)}"></option>
                             </select>
                             <div class="field-hint">Si eliges el rol Administrador, este campo no se usa.</div>

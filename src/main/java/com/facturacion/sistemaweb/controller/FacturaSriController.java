@@ -15,7 +15,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.FacturaSriService;
 
 @Controller
-@Profile({"sqlserver", "postgres"})
+@Profile("postgres")
 @PreAuthorize("isAuthenticated()")
 public class FacturaSriController {
 

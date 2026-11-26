@@ -26,7 +26,7 @@ import com.facturacion.sistemaweb.security.*;
 import com.facturacion.sistemaweb.service.AdministracionException;
 
 @SpringJUnitConfig(RecuperacionAdminServiceTest.Config.class)
-@ActiveProfiles({"sqlserver","recuperar-admin"})
+@ActiveProfiles({"postgres","recuperar-admin"})
 class RecuperacionAdminServiceTest {
     @Configuration @EnableTransactionManagement static class Config {
         @Bean DataSource ds() {return mock(DataSource.class);}
