@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 /** Aplica ventanas móviles por destino e IP sin conservar correo ni IP en claro. */
 @Repository @Profile({"sqlserver", "postgres"})
 public class IntentoRecuperacionRepository {
+    @org.springframework.beans.factory.annotation.Value("#{environment.matchesProfiles('postgres')}")
+    private boolean postgres;
     private final JdbcTemplate jdbc;
     public IntentoRecuperacionRepository(JdbcTemplate jdbc) { this.jdbc=jdbc; }
 
@@ -23,12 +25,17 @@ public class IntentoRecuperacionRepository {
             asegurarTransaccionFisica();
             bloquear(tipo,destino);
             bloquear((byte)0,ip);
-            jdbc.update("DELETE FROM dbo.IntentoRecuperacion WHERE ID_INTENTO IN (SELECT ID_INTENTO FROM dbo.IntentoRecuperacion WHERE CREADO_EN<dateadd('day',-1,sysutcdatetime()) LIMIT 1000)");
-            Long destinoPrevio=jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.IntentoRecuperacion "
-                +"WHERE TIPO=? AND HUELLA=? AND CREADO_EN>=DATEADD(hour,-1,SYSUTCDATETIME())",Long.class,tipo,destino);
-            Long ipPrevio=jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.IntentoRecuperacion "
-                +"WHERE TIPO=0 AND HUELLA=? AND CREADO_EN>=DATEADD(minute,-15,SYSUTCDATETIME())",Long.class,ip);
-            jdbc.update("INSERT dbo.IntentoRecuperacion(TIPO,HUELLA,CREADO_EN) VALUES(?,?,SYSUTCDATETIME()),(0,?,SYSUTCDATETIME())",
+            String ahora = postgres ? "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" : "SYSUTCDATETIME()";
+            jdbc.update(postgres
+                ? "DELETE FROM dbo.IntentoRecuperacion WHERE ID_INTENTO IN (SELECT ID_INTENTO FROM dbo.IntentoRecuperacion WHERE CREADO_EN<"+ahora+" - INTERVAL '1 day' LIMIT 1000)"
+                : "DELETE TOP (1000) FROM dbo.IntentoRecuperacion WHERE CREADO_EN<DATEADD(day,-1,SYSUTCDATETIME())");
+            String horaAnterior = postgres ? ahora+" - INTERVAL '1 hour'" : "DATEADD(hour,-1,SYSUTCDATETIME())";
+            String quinceMinutos = postgres ? ahora+" - INTERVAL '15 minutes'" : "DATEADD(minute,-15,SYSUTCDATETIME())";
+            Long destinoPrevio=jdbc.queryForObject((postgres ? "SELECT COUNT(*) FROM dbo.IntentoRecuperacion " : "SELECT COUNT_BIG(*) FROM dbo.IntentoRecuperacion ")
+                +"WHERE TIPO=? AND HUELLA=? AND CREADO_EN>="+horaAnterior,Long.class,tipo,destino);
+            Long ipPrevio=jdbc.queryForObject((postgres ? "SELECT COUNT(*) FROM dbo.IntentoRecuperacion " : "SELECT COUNT_BIG(*) FROM dbo.IntentoRecuperacion ")
+                +"WHERE TIPO=0 AND HUELLA=? AND CREADO_EN>="+quinceMinutos,Long.class,ip);
+            jdbc.update("INSERT INTO dbo.IntentoRecuperacion(TIPO,HUELLA,CREADO_EN) VALUES(?,?,"+ahora+"),(0,?,"+ahora+")",
                 tipo,destino,ip);
             return destinoPrevio!=null && destinoPrevio<3 && ipPrevio!=null && ipPrevio<10;
         } finally { Arrays.fill(ip,(byte)0);Arrays.fill(destino,(byte)0); }

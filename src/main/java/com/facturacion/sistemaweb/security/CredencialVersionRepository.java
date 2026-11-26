@@ -15,6 +15,8 @@ import java.sql.Types;
 /** Detecta de forma compatible la migración de versionado y revoca sesiones/tokenes. */
 @Repository @Profile({"sqlserver", "postgres"})
 public class CredencialVersionRepository {
+    @org.springframework.beans.factory.annotation.Value("#{environment.matchesProfiles('postgres')}")
+    private boolean postgres;
     private final JdbcTemplate jdbc;
     private volatile Boolean disponible;
     private volatile Boolean tablaRecuperacionDisponible;
@@ -80,7 +82,8 @@ public class CredencialVersionRepository {
     }
 
     public void revocarRecuperaciones(long id) {
-        if(tablaRecuperacionDisponible()) jdbc.update("UPDATE dbo.RecuperacionContrasenia SET REVOCADO_EN=SYSUTCDATETIME() "
+        if(tablaRecuperacionDisponible()) jdbc.update("UPDATE dbo.RecuperacionContrasenia SET REVOCADO_EN="
+            +(postgres ? "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" : "SYSUTCDATETIME()")+" "
             +"WHERE ID_USUARIO=? AND USADO_EN IS NULL AND REVOCADO_EN IS NULL",id);
     }
 
@@ -89,7 +92,8 @@ public class CredencialVersionRepository {
         if(cache==null) synchronized(this) {
             cache=tablaRecuperacionDisponible;
             if(cache==null) tablaRecuperacionDisponible=cache=Integer.valueOf(1).equals(jdbc.queryForObject(
-                "SELECT CASE WHEN OBJECT_ID(N'dbo.RecuperacionContrasenia',N'U') IS NULL THEN 0 ELSE 1 END",Integer.class));
+                postgres ? "SELECT CASE WHEN to_regclass('dbo.recuperacioncontrasenia') IS NULL THEN 0 ELSE 1 END"
+                    : "SELECT CASE WHEN OBJECT_ID(N'dbo.RecuperacionContrasenia',N'U') IS NULL THEN 0 ELSE 1 END",Integer.class));
         }
         return cache;
     }

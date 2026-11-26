@@ -16,6 +16,8 @@ import com.facturacion.sistemaweb.service.AdministracionException;
 public class RecuperacionController {
     private static final Logger log=LoggerFactory.getLogger(RecuperacionController.class);
     private static final String MENSAJE_PUBLICO="Si existe una cuenta activa con ese correo verificado, recibirás un enlace de seguridad.";
+    @org.springframework.beans.factory.annotation.Value("#{environment.matchesProfiles('pruebas')}")
+    private boolean bandejaLocal;
     private final RecuperacionContraseniaService recuperacion;
     private final CorreoRecuperacion correo;
     public RecuperacionController(RecuperacionContraseniaService recuperacion,CorreoRecuperacion correo) {
@@ -62,19 +64,34 @@ public class RecuperacionController {
     }
 
     @GetMapping("/cuenta/correo")
-    public String correoCuenta() { return "recuperacion/correo-cuenta"; }
+    public String correoCuenta(Model model) {
+        model.addAttribute("bandejaLocal",bandejaLocal);
+        return "recuperacion/correo-cuenta";
+    }
 
     @PostMapping("/cuenta/correo")
     public String solicitarVerificacion(@RequestParam(required=false) String email,Authentication authentication,
             jakarta.servlet.http.HttpServletRequest request,Model model) {
+        model.addAttribute("bandejaLocal",bandejaLocal);
+        if (bandejaLocal && (email==null || !email.strip().toLowerCase(java.util.Locale.ROOT).endsWith("@example.invalid"))) {
+            model.addAttribute("alertaCorreo","Usa una dirección ficticia que termine en @example.invalid.");
+            return "recuperacion/correo-cuenta";
+        }
         try {
             long id=idCuenta(authentication);
             var enlace=recuperacion.solicitarVerificacion(id,email,request.getRemoteAddr());
-            if(enlace!=null) correo.enviarVerificacion(enlace.correo(),enlace.token());
+            if (enlace != null && bandejaLocal) {
+                model.addAttribute("enlaceLocal",enlace);
+            } else if (enlace != null) {
+                correo.enviarVerificacion(enlace.correo(),enlace.token());
+                model.addAttribute("mensaje","Si el correo puede asociarse a esta cuenta, recibirás un enlace de verificación.");
+            } else {
+                model.addAttribute("alertaCorreo","No se pudo generar la verificación. Revisa la dirección o inténtalo más tarde.");
+            }
         } catch(DataAccessException | MailException | AdministracionException ex) {
             log.warn("No se pudo completar una solicitud de verificación de correo ({}).",ex.getClass().getSimpleName());
+            model.addAttribute("alertaCorreo","No se pudo enviar la verificación. Inténtalo más tarde.");
         }
-        model.addAttribute("mensaje","Si el correo puede asociarse a esta cuenta, recibirás un enlace de verificación.");
         return "recuperacion/correo-cuenta";
     }
 

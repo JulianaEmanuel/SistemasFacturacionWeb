@@ -17,6 +17,8 @@ public class RecuperacionContraseniaService {
     public record Enlace(String correo,String token) { }
     private record CuentaCorreo(long id,String correo) { }
     private record Token(long idUsuario,long idToken,String correo) { }
+    @org.springframework.beans.factory.annotation.Value("#{environment.matchesProfiles('postgres')}")
+    private boolean postgres;
     private final JdbcTemplate jdbc;
     private final IntentoRecuperacionRepository intentos;
     private final TokenSeguro tokens;
@@ -64,8 +66,9 @@ public class RecuperacionContraseniaService {
         if(!intentos.permitir((byte)2,tokens.huella("verificacion-correo",normalizado),
                 tokens.huella("ip",ipSeguro(ip))) || !formatoValido) return null;
         versiones.bloquearCuenta(idUsuario);
-        Integer cuenta=jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario WITH (UPDLOCK,HOLDLOCK) "
-            +"WHERE ID_USUARIO=? AND ACTIVO=1",Integer.class,idUsuario);
+        Integer cuenta=jdbc.queryForObject(postgres
+            ? "SELECT COUNT(*) FROM dbo.Usuario WHERE ID_USUARIO=? AND ACTIVO=true"
+            : "SELECT COUNT(*) FROM dbo.Usuario WITH (UPDLOCK,HOLDLOCK) WHERE ID_USUARIO=? AND ACTIVO=1",Integer.class,idUsuario);
         if(!Integer.valueOf(1).equals(cuenta)) return null;
         Integer ocupado=jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Usuario WHERE CORREO_USUARIO=? "
             +"AND CORREO_VERIFICADO_EN IS NOT NULL AND ID_USUARIO<>?",Integer.class,normalizado,idUsuario);
@@ -73,10 +76,11 @@ public class RecuperacionContraseniaService {
         String token=tokens.generar();
         byte[] hash=tokens.hashToken(token);
         try {
-            jdbc.update("UPDATE dbo.VerificacionCorreo SET REVOCADO_EN=SYSUTCDATETIME() "
+            jdbc.update("UPDATE dbo.VerificacionCorreo SET REVOCADO_EN="+ahora()+" "
                 +"WHERE ID_USUARIO=? AND USADO_EN IS NULL AND REVOCADO_EN IS NULL",idUsuario);
-            jdbc.update("INSERT dbo.VerificacionCorreo(ID_USUARIO,CORREO_DESTINO,HASH_TOKEN,CREADO_EN,EXPIRA_EN) "
-                +"VALUES(?,?,?,SYSUTCDATETIME(),DATEADD(minute,15,SYSUTCDATETIME()))",idUsuario,normalizado,hash);
+            String expira = postgres ? ahora()+" + INTERVAL '15 minutes'" : "DATEADD(minute,15,SYSUTCDATETIME())";
+            jdbc.update("INSERT INTO dbo.VerificacionCorreo(ID_USUARIO,CORREO_DESTINO,HASH_TOKEN,CREADO_EN,EXPIRA_EN) "
+                +"VALUES(?,?,?,"+ahora()+","+expira+")",idUsuario,normalizado,hash);
         } finally { Arrays.fill(hash,(byte)0); }
         return new Enlace(normalizado,token);
     }
@@ -91,20 +95,25 @@ public class RecuperacionContraseniaService {
             if(preseleccion.size()!=1) return false;
             versiones.bloquearCuenta(preseleccion.getFirst());
             var encontrados=jdbc.query("SELECT t.ID_VERIFICACION,t.ID_USUARIO,t.CORREO_DESTINO FROM dbo.VerificacionCorreo t "
-                +"WITH (UPDLOCK,HOLDLOCK) JOIN dbo.Usuario u WITH (UPDLOCK,HOLDLOCK) ON u.ID_USUARIO=t.ID_USUARIO "
+                +(postgres ? "JOIN dbo.Usuario u ON u.ID_USUARIO=t.ID_USUARIO "
+                    : "WITH (UPDLOCK,HOLDLOCK) JOIN dbo.Usuario u WITH (UPDLOCK,HOLDLOCK) ON u.ID_USUARIO=t.ID_USUARIO ")
                 +"WHERE t.HASH_TOKEN=? AND t.USADO_EN IS NULL AND t.REVOCADO_EN IS NULL "
-                +"AND t.EXPIRA_EN>SYSUTCDATETIME() AND u.ACTIVO=1",
+                + "AND t.EXPIRA_EN>"+ahora()+" AND u.ACTIVO="+(postgres ? "true FOR UPDATE OF t,u" : "1"),
                 (r,n)->new Token(r.getLong(2),r.getLong(1),r.getString(3)),hash);
             if(encontrados.size()!=1) return false;
             Token enlace=encontrados.getFirst();
-            if(jdbc.update("UPDATE dbo.VerificacionCorreo SET USADO_EN=SYSUTCDATETIME() WHERE ID_VERIFICACION=? "
-                +"AND USADO_EN IS NULL AND REVOCADO_EN IS NULL AND EXPIRA_EN>SYSUTCDATETIME()",enlace.idToken())!=1) return false;
-            if(jdbc.update("UPDATE dbo.Usuario SET CORREO_USUARIO=?,CORREO_VERIFICADO_EN=SYSUTCDATETIME() "
-                +"WHERE ID_USUARIO=? AND ACTIVO=1",enlace.correo(),enlace.idUsuario())!=1)
+            if(jdbc.update("UPDATE dbo.VerificacionCorreo SET USADO_EN="+ahora()+" WHERE ID_VERIFICACION=? "
+                +"AND USADO_EN IS NULL AND REVOCADO_EN IS NULL AND EXPIRA_EN>"+ahora(),enlace.idToken())!=1) return false;
+            if(jdbc.update("UPDATE dbo.Usuario SET CORREO_USUARIO=?,CORREO_VERIFICADO_EN="+ahora()+" "
+                +"WHERE ID_USUARIO=? AND ACTIVO="+(postgres ? "true" : "1"),enlace.correo(),enlace.idUsuario())!=1)
                 throw new AdministracionException("La cuenta ya no está disponible para verificar el correo.");
             versiones.revocarRecuperaciones(enlace.idUsuario());
             return true;
         } finally { Arrays.fill(hash,(byte)0); }
+    }
+
+    private String ahora() {
+        return postgres ? "(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" : "SYSUTCDATETIME()";
     }
 
     @Transactional
