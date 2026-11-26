@@ -16,7 +16,7 @@ import com.facturacion.sistemaweb.service.AdministracionException;
 public class RecuperacionController {
     private static final Logger log=LoggerFactory.getLogger(RecuperacionController.class);
     private static final String MENSAJE_PUBLICO="Si existe una cuenta activa con ese correo verificado, recibirás un enlace de seguridad.";
-    @org.springframework.beans.factory.annotation.Value("#{environment.matchesProfiles('pruebas') or environment.getProperty('app.correo.bandeja-local', T(java.lang.Boolean), false)}")
+    @org.springframework.beans.factory.annotation.Value("#{environment.getProperty('app.correo.bandeja-local', T(java.lang.Boolean), environment.matchesProfiles('pruebas'))}")
     private boolean bandejaLocal;
     private final RecuperacionContraseniaService recuperacion;
     private final CorreoRecuperacion correo;
