@@ -21,7 +21,7 @@ import com.facturacion.sistemaweb.security.SecurityConfig;
 import com.facturacion.sistemaweb.service.FotoPerfilService;
 
 @WebMvcTest(PerfilController.class)
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @Import({SecurityConfig.class,CapturaVistasConfig.class})
 class PerfilControllerTest {
     @Autowired MockMvc mvc;

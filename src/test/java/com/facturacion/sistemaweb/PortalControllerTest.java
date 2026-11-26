@@ -21,7 +21,7 @@ import com.facturacion.sistemaweb.controller.*;
 import com.facturacion.sistemaweb.security.*;
 import com.facturacion.sistemaweb.service.InicioService;
 
-@WebMvcTest({HomeController.class,AccesoController.class,ModuleController.class}) @ActiveProfiles("sqlserver") @Import({SecurityConfig.class,CapturaVistasConfig.class})
+@WebMvcTest({HomeController.class,AccesoController.class,ModuleController.class}) @ActiveProfiles("postgres") @Import({SecurityConfig.class,CapturaVistasConfig.class})
 @AutoConfigureMockMvc(print=MockMvcPrint.NONE)
 class PortalControllerTest {
     @Autowired MockMvc mvc;

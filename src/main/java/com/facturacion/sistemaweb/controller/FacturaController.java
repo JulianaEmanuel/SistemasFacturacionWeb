@@ -22,7 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.*;
 
-@Controller @Profile({"sqlserver", "postgres"}) @RequestMapping("/modulos/facturas")
+@Controller @Profile("postgres") @RequestMapping("/modulos/facturas")
 @PreAuthorize("isAuthenticated()")
 public class FacturaController {
     private final FacturaService facturas;

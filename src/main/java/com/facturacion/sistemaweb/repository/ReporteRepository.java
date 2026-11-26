@@ -9,7 +9,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.model.ReporteResultado.*;
 
 /** Solo SELECT. Los importes de cabecera nunca se suman sobre una unión 1:N. */
-@Repository @Profile({"sqlserver", "postgres"})
+@Repository @Profile("postgres")
 public class ReporteRepository {
     private final NamedParameterJdbcTemplate jdbc;
     public ReporteRepository(NamedParameterJdbcTemplate jdbc) { this.jdbc=jdbc; }

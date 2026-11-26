@@ -25,7 +25,7 @@ import com.facturacion.sistemaweb.service.PersonaService;
 import jakarta.validation.Valid;
 
 @Controller
-@Profile({"sqlserver", "postgres"})
+@Profile("postgres")
 @RequestMapping("/modulos/clientes")
 public class ClienteController {
 

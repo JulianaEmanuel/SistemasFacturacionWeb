@@ -20,7 +20,7 @@ import com.facturacion.sistemaweb.security.*;
 
 /** Transacción y bloqueo reales; todas las escrituras de la creación son mocks. */
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @Import(BootstrapAtomicityIntegrationTest.Config.class)
 class BootstrapAtomicityIntegrationTest {
     @TestConfiguration
@@ -38,9 +38,8 @@ class BootstrapAtomicityIntegrationTest {
     final AtomicInteger completion=new AtomicInteger(-1);
     void comprobarAmbito() {
         assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
-        assertEquals(1,jdbc.queryForObject("SELECT @@TRANCOUNT",Integer.class));
-        assertEquals("Exclusive",jdbc.queryForObject("SELECT APPLOCK_MODE('public','SistemaFacturacionWeb.Admin','Transaction')",String.class));
-        sesiones.add(jdbc.queryForObject("SELECT @@SPID",Integer.class));
+        assertTrue(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory' AND granted)",Boolean.class));
+        sesiones.add(jdbc.queryForObject("SELECT pg_backend_pid()",Integer.class));
     }
     @BeforeEach void configurarEscriturasSimuladas() {
         sesiones.clear();completion.set(-1);
@@ -57,7 +56,7 @@ class BootstrapAtomicityIntegrationTest {
     }
     void assertBloqueoLiberado() {
         assertEquals(1,sesiones.size());
-        assertEquals(1,jdbc.queryForObject("SELECT APPLOCK_TEST('public','SistemaFacturacionWeb.Admin','Exclusive','Session')",Integer.class));
+        assertTrue(jdbc.queryForObject("SELECT pg_try_advisory_xact_lock(hashtext('SistemaFacturacionWeb.Admin'))",Boolean.class));
     }
     @Test void comprobacionYCreacionCompartenTransaccionYConexionHastaCommit() {
         doAnswer(i -> { comprobarAmbito();return null; }).when(usuarios).insertar(anyString(),nullable(Integer.class),eq(true),any(byte[].class));

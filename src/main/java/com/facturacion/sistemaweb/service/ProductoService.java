@@ -16,7 +16,7 @@ import com.facturacion.sistemaweb.repository.ProductoRepository;
 import com.facturacion.sistemaweb.repository.ProveedorRepository;
 
 @Service
-@Profile({"sqlserver", "postgres"})
+@Profile("postgres")
 public class ProductoService {
 
 	private final ProductoRepository productoRepository;

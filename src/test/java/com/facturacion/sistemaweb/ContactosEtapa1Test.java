@@ -34,6 +34,6 @@ class ContactosEtapa1Test {
     @Test void deteccionDeMigracionEsSoloLecturaYNoEjecutaDdl(){
         var jdbc=mock(JdbcTemplate.class);when(jdbc.queryForObject(anyString(),eq(Integer.class))).thenReturn(0);
         var schema=new FacturacionSchema(jdbc);assertFalse(schema.disponible());assertFalse(schema.contactos());assertFalse(schema.disponible());
-        verify(jdbc,times(1)).queryForObject(argThat(sql->sql.startsWith("SELECT")&&sql.contains("COL_LENGTH")),eq(Integer.class));verifyNoMoreInteractions(jdbc);
+        verify(jdbc,times(1)).queryForObject(argThat(sql->sql.startsWith("SELECT")&&sql.contains("information_schema.columns")),eq(Integer.class));verifyNoMoreInteractions(jdbc);
     }
 }

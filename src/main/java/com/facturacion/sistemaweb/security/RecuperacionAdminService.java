@@ -15,7 +15,7 @@ import com.facturacion.sistemaweb.repository.*;
 import com.facturacion.sistemaweb.repository.RecuperacionAdminRepository.Cuenta;
 import com.facturacion.sistemaweb.service.AdministracionException;
 
-@Service @Profile("sqlserver & recuperar-admin & !bootstrap-admin") @ConditionalOnNotWebApplication
+@Service @Profile("postgres & recuperar-admin & !bootstrap-admin") @ConditionalOnNotWebApplication
 public class RecuperacionAdminService {
     private final RecuperacionAdminRepository recovery;
     private final AdministracionRepository administracion;
@@ -31,7 +31,7 @@ public class RecuperacionAdminService {
     }
     private void exigirLocal() {
         if(contexto instanceof WebApplicationContext || !Arrays.equals(argumentos.getSourceArgs(),new String[]{"--recuperar-admin"})
-                || !contexto.getEnvironment().acceptsProfiles(Profiles.of("sqlserver & recuperar-admin & !bootstrap-admin")))
+                || !contexto.getEnvironment().acceptsProfiles(Profiles.of("postgres & recuperar-admin & !bootstrap-admin")))
             throw new AdministracionException("La recuperación solo se permite mediante el comando local explícito.");
     }
     @Transactional(readOnly=true)

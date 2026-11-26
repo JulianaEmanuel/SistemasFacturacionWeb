@@ -14,7 +14,7 @@ import com.facturacion.sistemaweb.model.PersonaForm;
 import com.facturacion.sistemaweb.repository.PersonaRepository;
 
 @Service
-@Profile({"sqlserver", "postgres"})
+@Profile("postgres")
 public class PersonaService {
 
 	private final PersonaRepository personaRepository;

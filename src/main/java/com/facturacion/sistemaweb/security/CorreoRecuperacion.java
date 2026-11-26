@@ -8,7 +8,7 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.*;
 import org.springframework.stereotype.Component;
 
-@Component @Profile({"sqlserver", "postgres"})
+@Component @Profile("postgres")
 public class CorreoRecuperacion {
     private final JavaMailSender remitente;
     private final String correoRemitente;

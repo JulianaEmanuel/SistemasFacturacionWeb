@@ -5,7 +5,7 @@ El módulo consulta únicamente datos existentes. No crea tablas, no cambia
 
 ## Reportes y rutas
 
-Requieren iniciar sesión y el perfil `sqlserver`.
+Requieren iniciar sesión y el perfil `postgres`.
 
 | Ruta | Contenido |
 | --- | --- |
@@ -123,7 +123,7 @@ esquema no conserva un historial de cambios de esa asociación.
 
 ## Validación
 
-Suite completa Maven con perfil SQL Server: 242 pruebas, sin errores ni fallos
+Validación histórica de la suite Maven: 242 pruebas, sin errores ni fallos
 (39 de Reportes y 203 de regresión). JavaScript: 25 pruebas aprobadas, incluidas
 las de Facturas. Las pruebas de integración de Reportes ejecutan únicamente
 SELECT; servicio, autorización y descargas también tienen pruebas con mocks.
@@ -134,46 +134,4 @@ en `target/reportes-package.log`.
 
 ## Ejecución
 
-El JAR nuevo se genera por separado en
-`target/reportes/sistemaweb-0.0.1-SNAPSHOT.jar`, sin sobrescribir JAR anteriores.
-Ejecutar con Java 21 y el perfil SQL Server, por ejemplo desde PowerShell:
-
-```powershell
-& 'C:/Program Files/Eclipse Adoptium/jdk-21.0.13.9-hotspot/bin/java.exe' '-Djava.library.path=C:/mssql-jdbc-auth/13.4/x64' -jar target/reportes/sistemaweb-0.0.1-SNAPSHOT.jar --spring.profiles.active=sqlserver
-```
-
-Usar la configuración de conexión/certificado SQL Server del entorno existente.
-Si ya está ocupada la puerta 8080, añadir `--server.port=8081` para comprobar el
-JAR nuevo sin detener la instancia anterior. Iniciar sesión con una cuenta
-existente y abrir `http://localhost:8081/modulos/reportes` (o 8080 si se usa esa
-puerta). Este procedimiento no crea cuentas ni contraseñas.
-# Panel gráfico del resumen
-
-Las rutas `/modulos/reportes` y `/modulos/reportes/resumen` muestran cuatro
-gráficas con datos reales del período y alcance autorizado:
-
-- Ventas por día o mes, con los períodos sin ventas representados como cero.
-- Hasta diez clientes con mayor total facturado, más el número de clientes
-  facturados del período completo.
-- Hasta diez productos más vendidos por cantidad, usando el precio y el IVA
-  históricos del detalle para sus importes.
-- Composición del total facturado: subtotal e IVA.
-
-Las gráficas de ventas, clientes y productos incluyen tablas desplegables con los
-datos detallados. Las fechas, búsqueda de cliente y alcance del empleado se
-resuelven en el servicio. Todas las consultas del panel comparten una transacción
-de solo lectura; un empleado ve sus propias ventas y un administrador conserva el
-alcance autorizado del sistema. No se insertan ni modifican facturas.
-
-Por defecto se conserva el período habitual del sistema, desde el inicio del mes
-actual hasta hoy. Para consultar facturas anteriores hay que elegir sus fechas.
-Sin movimientos se muestran avisos, sin generar cifras ficticias. Los rankings
-son parciales; los indicadores monetarios corresponden a todo el período filtrado.
-
-El panel utiliza Chart.js local, admite modo claro/oscuro y movimiento reducido,
-y mantiene tablas disponibles si la biblioteca gráfica no carga. Las opciones de
-PDF y Excel conservan sus exportaciones del resumen monetario.
-
-Archivos principales: `ReportePanel.java`, `ReporteService.consultarPanel`,
-`templates/reportes/panel.html`, `static/js/reportes-panel.js` y los estilos
-compartidos de `static/css/reportes.css`.
+Sigue la [guía de arranque PostgreSQL](ARRANQUE-LOCAL.md) e inicia sesión. Abre `/modulos/reportes` en la instancia que corresponda al ambiente.

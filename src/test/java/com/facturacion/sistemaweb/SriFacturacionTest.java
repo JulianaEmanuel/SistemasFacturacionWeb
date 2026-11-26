@@ -32,7 +32,7 @@ import com.facturacion.sistemaweb.security.SecurityConfig;
 import com.facturacion.sistemaweb.service.*;
 
 @WebMvcTest(FacturaSriController.class)
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @Import({SecurityConfig.class, CapturaVistasConfig.class})
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 class SriFacturacionTest {

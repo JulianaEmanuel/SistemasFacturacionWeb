@@ -30,7 +30,7 @@ import com.facturacion.sistemaweb.service.*;
 
 @WebMvcTest({ClienteController.class, ProductoController.class, ProveedorController.class, EmpleadoController.class, CuentaEmpleadoController.class})
 @Import({SecurityConfig.class, CapturaVistasConfig.class})
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc(print=org.springframework.boot.webmvc.test.autoconfigure.MockMvcPrint.NONE)
 class PermisosModulosSecurityTest {
     @Autowired MockMvc mvc;
@@ -136,7 +136,7 @@ class PermisosModulosSecurityTest {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"fechaNacimientoPersona\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"correoPersona\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"password\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("se creará automáticamente")))
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("EMPLEADO (predeterminado)")))
             .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ADMINISTRADOR"))));
 
         mvc.perform(altaEmpleado(""))

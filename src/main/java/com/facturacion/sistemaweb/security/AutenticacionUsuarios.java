@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** Único componente que lee el hash; solo lo entrega al proveedor de autenticación. */
-@Service @Profile({"sqlserver", "postgres"})
+@Service @Profile("postgres")
 public class AutenticacionUsuarios implements UserDetailsService {
     private final JdbcTemplate jdbc;
     private final CredencialVersionRepository versiones;

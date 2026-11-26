@@ -19,7 +19,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.security.SecurityConfig;
 import com.facturacion.sistemaweb.service.*;
 
-@WebMvcTest(ReporteController.class) @ActiveProfiles("sqlserver") @Import({SecurityConfig.class,CapturaVistasConfig.class})
+@WebMvcTest(ReporteController.class) @ActiveProfiles("postgres") @Import({SecurityConfig.class,CapturaVistasConfig.class})
 @AutoConfigureMockMvc(print=MockMvcPrint.NONE)
 class ReporteControllerTest {
     @Test void graficoSeRenderizaConImportesDelResultadoAutorizado() throws Exception {

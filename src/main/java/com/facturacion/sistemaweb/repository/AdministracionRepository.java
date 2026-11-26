@@ -7,11 +7,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.stereotype.Repository;
-import org.springframework.dao.ConcurrencyFailureException;
-import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import com.facturacion.sistemaweb.model.UsuarioResumen;
@@ -19,7 +16,7 @@ import com.facturacion.sistemaweb.security.CredencialVersionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** Las lecturas seleccionan columnas explícitas y nunca recuperan CONTRASENIA. */
-@Repository @Profile({"sqlserver", "postgres"})
+@Repository @Profile("postgres")
 public class AdministracionRepository {
     private final JdbcTemplate jdbc;
     private final CredencialVersionRepository versiones;
@@ -31,47 +28,16 @@ public class AdministracionRepository {
     }
     @Transactional(propagation=Propagation.MANDATORY)
     public void bloquear() {
-        Integer result = jdbc.execute((ConnectionCallback<Integer>) connection -> {
-            if(connection.getAutoCommit())
+        jdbc.execute((ConnectionCallback<Void>) connection -> {
+            if (connection.getAutoCommit()) {
                 throw new InvalidDataAccessApiUsageException("El bloqueo administrativo requiere una conexión transaccional.");
-            if(connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres")) {
-                try(PreparedStatement ps=connection.prepareStatement("SELECT pg_advisory_xact_lock(hashtext('SistemaFacturacionWeb.Admin'))")) {
-                    ps.execute();
-                    return 0;
-                }
             }
-            // El driver SQL Server usa IMPLICIT_TRANSACTIONS: autoCommit=false no
-            // implica @@TRANCOUNT>0. Una lectura de catálogo inicia la transacción
-            // física sin escribir datos ni agregar BEGIN/COMMIT anidados.
-            try (PreparedStatement statement=connection.prepareStatement(
-                    "IF @@TRANCOUNT = 0 BEGIN DECLARE @ignored int; "
-                    + "SELECT TOP (1) @ignored=object_id FROM sys.objects; END; SELECT @@TRANCOUNT" );
-                    ResultSet state=statement.executeQuery()) {
-                if(!state.next() || state.getInt(1)<1)
-                    throw new InvalidDataAccessResourceUsageException("SQL Server no inició la transacción requerida por el bloqueo administrativo.");
-            }
-            // Leer el RETURN del procedimiento explícitamente, sin depender de
-            // los posibles resultados intermedios de un batch EXEC + SELECT.
-            try (CallableStatement statement=connection.prepareCall("{? = call sys.sp_getapplock(?, ?, ?, ?)}")) {
-                statement.registerOutParameter(1,Types.INTEGER);
-                statement.setString(2,"SistemaFacturacionWeb.Admin");
-                statement.setString(3,"Exclusive");
-                statement.setString(4,"Transaction");
-                statement.setInt(5,10000);
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT pg_advisory_xact_lock(hashtext('SistemaFacturacionWeb.Admin'))")) {
                 statement.execute();
-                int code=statement.getInt(1);
-                return statement.wasNull()?null:code;
             }
+            return null;
         });
-        if(result==null) throw new DataAccessResourceFailureException("sp_getapplock no devolvió un código de resultado.");
-        switch(result) {
-            case 0,1 -> { /* Se libera exclusivamente al terminar la transacción externa. */ }
-            case -1 -> throw new CannotAcquireLockException("Administración ocupada: venció la espera del bloqueo (código -1). Inténtalo de nuevo.");
-            case -2 -> throw new ConcurrencyFailureException("Se canceló la espera del bloqueo administrativo (código -2).");
-            case -3 -> throw new CannotAcquireLockException("SQL Server detectó un interbloqueo administrativo (código -3). Inténtalo de nuevo.");
-            case -999 -> throw new InvalidDataAccessResourceUsageException("SQL Server rechazó sp_getapplock (código -999). Revisa parámetros, permisos y estado de la transacción.");
-            default -> throw new DataAccessResourceFailureException("sp_getapplock devolvió un código inesperado: "+result);
-        }
     }
     public List<UsuarioResumen> buscar(String q, Integer tipo, Boolean activo) {
         return jdbc.query(SELECT + "WHERE (u.NOMBRE_USUARIO LIKE ? OR t.TIPO_USUARIO LIKE ?) AND (cast(? as integer) IS NULL OR u.ID_TIPO_USUARIO=?) AND (cast(? as boolean) IS NULL OR u.ACTIVO=?) ORDER BY u.NOMBRE_USUARIO", MAP,
@@ -103,10 +69,7 @@ public class AdministracionRepository {
         var claves=new org.springframework.jdbc.support.GeneratedKeyHolder();
         jdbc.update(connection -> {
             String sql = "INSERT INTO dbo.Usuario (NOMBRE_USUARIO,ID_TIPO_USUARIO,ACTIVO,CONTRASENIA) VALUES (?,?,?,?)";
-            boolean postgres = "PostgreSQL".equals(connection.getMetaData().getDatabaseProductName());
-            PreparedStatement statement = postgres
-                    ? connection.prepareStatement(sql, new String[]{"id_usuario"})
-                    : connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement statement = connection.prepareStatement(sql, new String[]{"id_usuario"});
             statement.setString(1,nombre);statement.setInt(2,tipo);statement.setBoolean(3,activo);statement.setBytes(4,codificada);
             return statement;
         },claves);

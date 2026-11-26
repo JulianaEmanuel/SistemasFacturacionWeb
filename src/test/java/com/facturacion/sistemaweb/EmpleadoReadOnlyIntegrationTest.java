@@ -12,18 +12,25 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import com.facturacion.sistemaweb.repository.EmpleadoRepository;
 
-/** Solo GET y SELECT contra SQL Server. Ninguna operación de escritura real. */
+/** Solo GET y SELECT contra PostgreSQL. Ninguna operación de escritura real. */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @Transactional(readOnly = true)
 @org.springframework.security.test.context.support.WithMockUser(authorities={"USER","ACCOUNT_ID_1"})
 class EmpleadoReadOnlyIntegrationTest {
     @org.springframework.test.context.bean.override.mockito.MockitoBean
     com.facturacion.sistemaweb.repository.AdministracionRepository sesiones;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    com.facturacion.sistemaweb.security.CredencialVersionRepository versiones;
     @org.junit.jupiter.api.BeforeEach void sesionAutenticada() {
+        org.mockito.Mockito.when(versiones.sesionVigente(org.mockito.ArgumentMatchers.eq(1L),org.mockito.ArgumentMatchers.anyCollection()))
+            .thenReturn(true);
         org.mockito.Mockito.when(sesiones.buscarNombre(org.mockito.ArgumentMatchers.anyString()))
             .thenReturn(java.util.Optional.of(new com.facturacion.sistemaweb.model.UsuarioResumen(1L, 1, "user", "OPERADOR", true)));
+    }
+    @org.junit.jupiter.api.BeforeEach void sesionAdministrativa() {
+        org.mockito.Mockito.when(sesiones.esAdmin("user","ADMINISTRADOR")).thenReturn(true);
     }
     @Autowired MockMvc mvc;
     @Autowired EmpleadoRepository repository;

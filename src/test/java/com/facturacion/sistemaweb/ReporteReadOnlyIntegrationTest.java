@@ -13,14 +13,14 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.repository.ReporteRepository;
 
 /** Solo SELECT reales: no crea facturas, usuarios ni datos de preparación. */
-@SpringBootTest @ActiveProfiles("sqlserver") @Transactional(readOnly=true,isolation=Isolation.SERIALIZABLE)
+@SpringBootTest @ActiveProfiles("postgres") @Transactional(readOnly=true,isolation=Isolation.SERIALIZABLE)
 class ReporteReadOnlyIntegrationTest {
     @Autowired ReporteRepository repository;
     @Autowired JdbcTemplate jdbc;
     ReporteFiltro.Validado filtro(String agrupacion,String orden,Long empleado) {
         return new ReporteFiltro.Validado(LocalDate.of(2026,1,1),LocalDate.of(2026,12,31),null,null,empleado,agrupacion,orden,"",10);
     }
-    @Test void agrupacionesYRankingsEjecutanContraSqlServer() {
+    @Test void agrupacionesYRankingsEjecutanContraPostgreSql() {
         for(var tipo:ReporteTipo.values()) { repository.resumen(tipo,filtro("dia","cantidad",null));repository.filas(tipo,filtro("dia","cantidad",null)); }
         repository.filas(ReporteTipo.VENTAS,filtro("mes","cantidad",null));repository.filas(ReporteTipo.VENTAS,filtro("factura","cantidad",null));
         repository.filas(ReporteTipo.PRODUCTOS,filtro("dia","importe",null));
@@ -34,7 +34,7 @@ class ReporteReadOnlyIntegrationTest {
         var f=filtro("dia","cantidad",null);var r=repository.resumen(ReporteTipo.RESUMEN,f);
         var esperado=jdbc.queryForObject("SELECT COALESCE(SUM(TOTAL_FACTURA),0) FROM dbo.Factura WHERE FECHA_FACTURA>=? AND FECHA_FACTURA<?",BigDecimal.class,f.inicio(),f.finExclusivo());
         assertEquals(0,esperado.compareTo(r.total()));
-        var count=jdbc.queryForObject("SELECT COUNT_BIG(*) FROM dbo.Factura WHERE FECHA_FACTURA>=? AND FECHA_FACTURA<?",Long.class,f.inicio(),f.finExclusivo());assertEquals(count,r.facturas());
+        var count=jdbc.queryForObject("SELECT COUNT(*) FROM dbo.Factura WHERE FECHA_FACTURA>=? AND FECHA_FACTURA<?",Long.class,f.inicio(),f.finExclusivo());assertEquals(count,r.facturas());
     }
     @Test void filtroProductoSoloIncluyeSusLineasHistoricas() {
         var f=new ReporteFiltro.Validado(LocalDate.of(2026,1,1),LocalDate.of(2026,12,31),null,-1L,null,"dia","cantidad","",10);

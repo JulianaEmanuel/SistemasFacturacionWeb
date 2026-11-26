@@ -8,7 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import com.facturacion.sistemaweb.repository.AdministracionRepository;
 
-@Component("adminAccess") @Profile({"sqlserver", "postgres"})
+@Component("adminAccess") @Profile("postgres")
 public class AdminAccess {
     private final AdministracionRepository repository;
     private final String reservado;

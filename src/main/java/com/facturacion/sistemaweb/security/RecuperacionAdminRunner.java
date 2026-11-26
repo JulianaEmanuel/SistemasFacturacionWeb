@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import com.facturacion.sistemaweb.service.AdministracionException;
 
-@Component @Profile("sqlserver & recuperar-admin & !bootstrap-admin") @ConditionalOnNotWebApplication
+@Component @Profile("postgres & recuperar-admin & !bootstrap-admin") @ConditionalOnNotWebApplication
 public class RecuperacionAdminRunner implements ApplicationRunner {
     private final RecuperacionAdminService service;
     private final Supplier<Console> consola;

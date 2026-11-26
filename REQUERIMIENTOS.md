@@ -9,7 +9,7 @@ casilla, cambiar su estado y agregar una línea en el
 - **Base de la revisión:** lectura del código fuente actual (rama `main` con
   cambios sin commit), documentación existente y
   [AUDITORIA-FUNCIONAL.md](AUDITORIA-FUNCIONAL.md) del 2026-11-06.
-- **Límite:** no se ejecutaron pruebas ni se conectó a SQL Server durante esta
+- **Límite:** no se ejecutaron pruebas ni se conectó a la base anterior durante esta
   revisión; los estados "verificado" provienen de la auditoría anterior.
 
 **Leyenda de estado**
@@ -103,7 +103,7 @@ casilla, cambiar su estado y agregar una línea en el
 
 ### 2.7 Calidad
 - [x] Alrededor de 311 pruebas Java (`@Test`) y 8 suites de pruebas JavaScript.
-- [x] Documentación por módulo (facturas, reportes, seguridad, recuperación, arranque local, SQL Server).
+- [x] Documentación por módulo (facturas, reportes, seguridad, recuperación, arranque local y esquema PostgreSQL).
 - [x] `ddl-auto=none`: la aplicación no modifica el esquema automáticamente.
 
 ---
@@ -132,7 +132,7 @@ Ordenados por prioridad. Cada ítem indica dónde se detectó para poder retomar
   [pom.xml](pom.xml) usa el puerto 8081 (pensado para pruebas) pero con
   `DB_NAME=SistemaFacturacionWeb`. Corregirlo antes de usarlo como ambiente de
   pruebas.
-- [ ] 🟡 **Verificación contra SQL Server real.** La última prueba de
+- [ ] 🟡 **Verificación contra la base operativa.** La última prueba de
   integración de solo lectura (`FacturaReadOnlyIntegrationTest`) falló por TLS;
   los mapeos JPA del esquema base no están certificados. Corregir el
   certificado o las propiedades **solo en el entorno local** y repetir.
@@ -160,7 +160,6 @@ Ordenados por prioridad. Cada ítem indica dónde se detectó para poder retomar
   solo cambios incrementales; no existe el script de creación de `Persona`,
   `Producto`, `Proveedor`, `Empleado`, `Factura` y `Detallefactura`. Sin él
   no se puede montar una base nueva desde el repositorio. La carpeta
-  `sql/migrations/` está vacía (unificar con `db/migraciones/`).
 - [ ] ❌ **Páginas de error personalizadas.** No existe
   `templates/error/` (404, 403, 500) ni manejador global de excepciones; el
   usuario ve la página de error por defecto de Spring.
@@ -194,7 +193,7 @@ Ordenados por prioridad. Cada ítem indica dónde se detectó para poder retomar
   `idFormaPago`) sin `@ManyToOne`; funciona, pero complica las consultas.
 - [ ] 🟡 **Controlador genérico de módulos.** `ModuleController`
   (`/modulos/{slug}`) muestra `module-placeholder.html`; revisar que ya no se
-  use cuando el perfil `sqlserver` está activo, o eliminarlo.
+  use cuando el perfil `postgres` está activo, o eliminarlo.
 - [ ] ❌ **Aviso en la interfaz para facturas antiguas** sin forma de pago ni
   copia histórica del cliente.
 - [x] ✅ **Orden de migraciones** (001 → 005) documentado en FACTURAS.md. *(2026-11-11)*
@@ -222,4 +221,4 @@ Ordenados por prioridad. Cada ítem indica dónde se detectó para poder retomar
 | Fecha | Cambio |
 |---|---|
 | 2026-11-11 | Creación del documento a partir de la revisión del código y de `AUDITORIA-FUNCIONAL.md`. |
-| 2026-11-11 | Envío de factura por correo al cliente, alta de empleado con cuenta y verificación de permisos del empleado. Se corrigieron 28 pruebas MVC que no simulaban al administrador. Resultado: 359/363 pruebas Java con SQL Server local (las 4 restantes fallan en el filtro de sesión, ajeno a estos cambios) y 49/49 JavaScript. |
+| 2026-11-11 | Envío de factura por correo al cliente, alta de empleado con cuenta y verificación de permisos del empleado. Se corrigieron 28 pruebas MVC que no simulaban al administrador. Resultado: 359/363 pruebas Java con la base anterior local (las 4 restantes fallan en el filtro de sesión, ajeno a estos cambios) y 49/49 JavaScript. |

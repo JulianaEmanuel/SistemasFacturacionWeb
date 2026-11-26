@@ -32,7 +32,7 @@ import com.facturacion.sistemaweb.service.ProductoService;
 import com.facturacion.sistemaweb.service.ProductoRelacionadoException;
 
 @WebMvcTest(controllers = ProductoController.class)
-@ActiveProfiles("sqlserver")
+@ActiveProfiles("postgres")
 @org.springframework.security.test.context.support.WithMockUser
 @org.springframework.context.annotation.Import({com.facturacion.sistemaweb.security.SecurityConfig.class,CapturaVistasConfig.class})
 class ProductoControllerIntegrationTest {

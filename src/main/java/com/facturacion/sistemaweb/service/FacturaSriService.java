@@ -20,7 +20,7 @@ import com.facturacion.sistemaweb.repository.*;
  * 4) Envía el XML al SRI en ambiente de pruebas y guarda el retorno explícito.
  */
 @Service
-@Profile({"sqlserver", "postgres"})
+@Profile("postgres")
 @PreAuthorize("isAuthenticated()")
 public class FacturaSriService {
 

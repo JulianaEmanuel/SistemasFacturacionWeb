@@ -46,14 +46,14 @@ class RecuperacionAdminRunnerTest {
         verify(console,never()).readPassword(anyString());verify(service,never()).recuperar(anyLong(),anyString(),anyString());
     }
     @Test void ningunComponenteExisteEnUnContextoWebInclusoConElPerfil() {
-        new WebApplicationContextRunner().withPropertyValues("spring.profiles.active=sqlserver,recuperar-admin")
+        new WebApplicationContextRunner().withPropertyValues("spring.profiles.active=postgres,recuperar-admin")
             .withUserConfiguration(RecuperacionAdminService.class,RecuperacionAdminRunner.class,RecuperacionAdminRepository.class)
             .run(ctx->{assertFalse(ctx.containsBean("recuperacionAdminService"));assertTrue(ctx.getBeansOfType(RecuperacionAdminService.class).isEmpty());assertTrue(ctx.getBeansOfType(RecuperacionAdminRepository.class).isEmpty());assertTrue(ctx.getBeansOfType(RecuperacionAdminRunner.class).isEmpty());});
     }
     @Test void servicioRechazaContextoWebYFaltaDeArgumentoSinAccederASql() {
         var repo=mock(RecuperacionAdminRepository.class);
         try(var web=new GenericWebApplicationContext();var local=new GenericApplicationContext()) {
-            web.getEnvironment().setActiveProfiles("sqlserver","recuperar-admin");local.getEnvironment().setActiveProfiles("sqlserver","recuperar-admin");
+            web.getEnvironment().setActiveProfiles("postgres","recuperar-admin");local.getEnvironment().setActiveProfiles("postgres","recuperar-admin");
             var a=new RecuperacionAdminService(repo,null,null,null,null,new DefaultApplicationArguments("--recuperar-admin"),web);
             var b=new RecuperacionAdminService(repo,null,null,null,null,new DefaultApplicationArguments(),local);
             assertThrows(AdministracionException.class,a::candidatas);assertThrows(AdministracionException.class,b::candidatas);verifyNoInteractions(repo);

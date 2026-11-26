@@ -1,83 +1,53 @@
 package com.facturacion.sistemaweb;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.mockito.AdditionalMatchers.aryEq;
-import java.sql.*;
-import org.junit.jupiter.api.*;
-import org.springframework.dao.*;
-import org.springframework.jdbc.core.*;
+import static org.mockito.Mockito.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.support.KeyHolder;
 import com.facturacion.sistemaweb.repository.AdministracionRepository;
 
 class AdministracionRepositoryTest {
-    JdbcTemplate jdbc;
-    Connection connection;
-    PreparedStatement state;
-    ResultSet result;
-    CallableStatement lock;
-    AdministracionRepository repository;
-    @BeforeEach void setup() throws Exception {
-        jdbc=mock(JdbcTemplate.class);connection=mock(Connection.class);state=mock(PreparedStatement.class);
-        result=mock(ResultSet.class);lock=mock(CallableStatement.class);repository=new AdministracionRepository(jdbc);
-        when(jdbc.execute(any(ConnectionCallback.class))).thenAnswer(i -> ((ConnectionCallback<?>)i.getArgument(0)).doInConnection(connection));
-        when(connection.prepareStatement(anyString())).thenReturn(state);when(state.executeQuery()).thenReturn(result);
-        DatabaseMetaData metadata=mock(DatabaseMetaData.class);
-        when(connection.getMetaData()).thenReturn(metadata);
-        when(metadata.getDatabaseProductName()).thenReturn("Microsoft SQL Server");
-        when(result.next()).thenReturn(true);when(result.getInt(1)).thenReturn(1);
-        when(connection.prepareCall(anyString())).thenReturn(lock);
-    }
-    @Test void iniciaTransaccionAntesDeAdquirirBloqueoEnMismaConexion() throws Exception {
+    @Test void elBloqueoRequiereTransaccionYUsaLaMismaConexion() throws Exception {
+        var jdbc=mock(JdbcTemplate.class);
+        var connection=mock(Connection.class);
+        var statement=mock(PreparedStatement.class);
+        when(jdbc.execute(any(ConnectionCallback.class)))
+            .thenAnswer(i -> i.<ConnectionCallback<?>>getArgument(0).doInConnection(connection));
+        when(connection.prepareStatement(contains("pg_advisory_xact_lock"))).thenReturn(statement);
+        when(connection.getAutoCommit()).thenReturn(true,false);
+        var repository=new AdministracionRepository(jdbc);
+
+        assertThrows(InvalidDataAccessApiUsageException.class,repository::bloquear);
+        verify(connection,never()).prepareStatement(anyString());
         repository.bloquear();
-        var order=inOrder(connection,state,result,lock);
-        order.verify(connection).getAutoCommit();
-        order.verify(connection).prepareStatement(contains("IF @@TRANCOUNT = 0"));
-        order.verify(state).executeQuery();order.verify(result).next();order.verify(result).getInt(1);
-        order.verify(connection).prepareCall("{? = call sys.sp_getapplock(?, ?, ?, ?)}");
-        verify(lock).registerOutParameter(1,Types.INTEGER);
-        verify(lock).setString(2,"SistemaFacturacionWeb.Admin");verify(lock).setString(3,"Exclusive");
-        verify(lock).setString(4,"Transaction");verify(lock).setInt(5,10000);
-        verify(lock).execute();verify(lock).getInt(1);verify(lock).close();verify(state).close();verify(result).close();
-        verify(connection,never()).commit();verify(connection,never()).rollback();verify(connection,never()).close();
-    }
-    @Test void aceptaConcesionInmediataYTrasEspera() throws Exception {
-        when(lock.getInt(1)).thenReturn(0,1);
-        assertDoesNotThrow(repository::bloquear);assertDoesNotThrow(repository::bloquear);
-    }
-    @Test void distingueTimeoutCancelacionInterbloqueoYErrorDeLlamada() throws Exception {
-        when(lock.getInt(1)).thenReturn(-1,-2,-3,-999,17);
-        assertTrue(assertThrows(CannotAcquireLockException.class,repository::bloquear).getMessage().contains("-1"));
-        assertTrue(assertThrows(ConcurrencyFailureException.class,repository::bloquear).getMessage().contains("-2"));
-        assertTrue(assertThrows(CannotAcquireLockException.class,repository::bloquear).getMessage().contains("-3"));
-        var error=assertThrows(InvalidDataAccessResourceUsageException.class,repository::bloquear);
-        assertTrue(error.getMessage().contains("-999"));
-        assertThrows(DataAccessResourceFailureException.class,repository::bloquear);
-    }
-    @Test void rechazaAutocommitAntesDeTocarSql() throws Exception {
-        when(connection.getAutoCommit()).thenReturn(true);
-        assertThrows(InvalidDataAccessApiUsageException.class,repository::bloquear);verify(connection,never()).prepareStatement(anyString());
-    }
-    @Test void noSolicitaBloqueoSiNoSeInicioTransaccionFisica() throws Exception {
-        when(result.getInt(1)).thenReturn(0);
-        assertThrows(InvalidDataAccessResourceUsageException.class,repository::bloquear);verify(connection,never()).prepareCall(anyString());
-    }
-    @Test void retornoNuloNoSeInterpretaComoExito() throws Exception {
-        when(lock.wasNull()).thenReturn(true);assertThrows(DataAccessResourceFailureException.class,repository::bloquear);
+        verify(statement).execute();
+        verify(statement).close();
+        verify(connection,never()).commit();
     }
 
-    @Test void postgresSolicitaSoloLaColumnaDelIdentificadorGenerado() throws Exception {
-        when(connection.getMetaData().getDatabaseProductName()).thenReturn("PostgreSQL");
-        when(connection.prepareStatement(contains("INSERT INTO dbo.Usuario"), aryEq(new String[]{"id_usuario"})))
-            .thenReturn(state);
-        when(jdbc.update(any(PreparedStatementCreator.class),any(org.springframework.jdbc.support.KeyHolder.class)))
-            .thenAnswer(i -> {
-                i.<PreparedStatementCreator>getArgument(0).createPreparedStatement(connection);
-                i.<org.springframework.jdbc.support.KeyHolder>getArgument(1).getKeyList()
-                    .add(java.util.Map.of("id_usuario",44L));
-                return 1;
-            });
+    @Test void insertaYRecuperaUnaSolaColumnaDeIdentidad() throws Exception {
+        var jdbc=mock(JdbcTemplate.class);
+        var connection=mock(Connection.class);
+        var statement=mock(PreparedStatement.class);
+        when(connection.prepareStatement(contains("INSERT INTO dbo.Usuario"),aryEq(new String[]{"id_usuario"})))
+            .thenReturn(statement);
+        when(jdbc.update(any(PreparedStatementCreator.class),any(KeyHolder.class))).thenAnswer(i -> {
+            i.<PreparedStatementCreator>getArgument(0).createPreparedStatement(connection);
+            i.<KeyHolder>getArgument(1).getKeyList().add(Map.of("id_usuario",44L));
+            return 1;
+        });
 
-        assertEquals(44L,repository.insertarDevolviendoId("operador",2,true,new byte[]{1}));
-        verify(connection,never()).prepareStatement(contains("INSERT"),eq(Statement.RETURN_GENERATED_KEYS));
+        assertEquals(44L,new AdministracionRepository(jdbc).insertarDevolviendoId("operador",2,true,new byte[]{1}));
+        verify(statement).setString(1,"operador");
+        verify(statement).setInt(2,2);
+        verify(statement).setBoolean(3,true);
     }
 }
