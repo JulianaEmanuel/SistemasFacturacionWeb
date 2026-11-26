@@ -2,6 +2,7 @@ package com.facturacion.sistemaweb;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.AdditionalMatchers.aryEq;
 import java.sql.*;
 import org.junit.jupiter.api.*;
 import org.springframework.dao.*;
@@ -20,6 +21,9 @@ class AdministracionRepositoryTest {
         result=mock(ResultSet.class);lock=mock(CallableStatement.class);repository=new AdministracionRepository(jdbc);
         when(jdbc.execute(any(ConnectionCallback.class))).thenAnswer(i -> ((ConnectionCallback<?>)i.getArgument(0)).doInConnection(connection));
         when(connection.prepareStatement(anyString())).thenReturn(state);when(state.executeQuery()).thenReturn(result);
+        DatabaseMetaData metadata=mock(DatabaseMetaData.class);
+        when(connection.getMetaData()).thenReturn(metadata);
+        when(metadata.getDatabaseProductName()).thenReturn("Microsoft SQL Server");
         when(result.next()).thenReturn(true);when(result.getInt(1)).thenReturn(1);
         when(connection.prepareCall(anyString())).thenReturn(lock);
     }
@@ -59,5 +63,21 @@ class AdministracionRepositoryTest {
     }
     @Test void retornoNuloNoSeInterpretaComoExito() throws Exception {
         when(lock.wasNull()).thenReturn(true);assertThrows(DataAccessResourceFailureException.class,repository::bloquear);
+    }
+
+    @Test void postgresSolicitaSoloLaColumnaDelIdentificadorGenerado() throws Exception {
+        when(connection.getMetaData().getDatabaseProductName()).thenReturn("PostgreSQL");
+        when(connection.prepareStatement(contains("INSERT INTO dbo.Usuario"), aryEq(new String[]{"id_usuario"})))
+            .thenReturn(state);
+        when(jdbc.update(any(PreparedStatementCreator.class),any(org.springframework.jdbc.support.KeyHolder.class)))
+            .thenAnswer(i -> {
+                i.<PreparedStatementCreator>getArgument(0).createPreparedStatement(connection);
+                i.<org.springframework.jdbc.support.KeyHolder>getArgument(1).getKeyList()
+                    .add(java.util.Map.of("id_usuario",44L));
+                return 1;
+            });
+
+        assertEquals(44L,repository.insertarDevolviendoId("operador",2,true,new byte[]{1}));
+        verify(connection,never()).prepareStatement(contains("INSERT"),eq(Statement.RETURN_GENERATED_KEYS));
     }
 }

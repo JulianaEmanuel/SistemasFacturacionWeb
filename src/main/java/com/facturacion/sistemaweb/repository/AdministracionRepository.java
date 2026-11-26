@@ -102,13 +102,16 @@ public class AdministracionRepository {
     public Long insertarDevolviendoId(String nombre, Integer tipo, boolean activo, byte[] codificada) {
         var claves=new org.springframework.jdbc.support.GeneratedKeyHolder();
         jdbc.update(connection -> {
-            PreparedStatement statement=connection.prepareStatement(
-                "INSERT INTO dbo.Usuario (NOMBRE_USUARIO,ID_TIPO_USUARIO,ACTIVO,CONTRASENIA) VALUES (?,?,?,?)",Statement.RETURN_GENERATED_KEYS);
+            String sql = "INSERT INTO dbo.Usuario (NOMBRE_USUARIO,ID_TIPO_USUARIO,ACTIVO,CONTRASENIA) VALUES (?,?,?,?)";
+            boolean postgres = "PostgreSQL".equals(connection.getMetaData().getDatabaseProductName());
+            PreparedStatement statement = postgres
+                    ? connection.prepareStatement(sql, new String[]{"id_usuario"})
+                    : connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1,nombre);statement.setInt(2,tipo);statement.setBoolean(3,activo);statement.setBytes(4,codificada);
             return statement;
         },claves);
         Number id=claves.getKey();
-        if(id==null) throw new DataAccessResourceFailureException("SQL Server no devolvió el identificador del usuario creado.");
+        if(id==null) throw new DataAccessResourceFailureException("La base de datos no devolvió el identificador del usuario creado.");
         return id.longValue();
     }
     public void clave(Long id,byte[] codificada) {
