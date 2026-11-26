@@ -5,7 +5,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Detecta migraciones manuales; nunca crea tablas ni completa registros. */
-@Service @Profile("sqlserver")
+@Service @Profile({"sqlserver", "postgres"})
 public class FacturacionSchema {
     private final JdbcTemplate jdbc;
     private volatile Boolean contactos,disponible;

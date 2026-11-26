@@ -10,7 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import com.facturacion.sistemaweb.model.*;
 
-@Service @Profile("sqlserver") @PreAuthorize("isAuthenticated()")
+@Service @Profile({"sqlserver", "postgres"}) @PreAuthorize("isAuthenticated()")
 public class ReporteExcelService {
     private final ReporteService reportes;
     public ReporteExcelService(ReporteService reportes) { this.reportes=reportes; }

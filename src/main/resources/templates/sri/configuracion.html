@@ -56,7 +56,6 @@
               <label class="form-label" for="ambiente">Ambiente SRI *</label>
               <select class="form-select" id="ambiente" th:field="*{ambiente}">
                 <option value="1">1 - PRUEBAS (celcer.sri.gob.ec)</option>
-                <option value="2">2 - PRODUCCIÓN</option>
               </select>
             </div>
             <div class="col-md-3">
@@ -72,11 +71,11 @@
 
             <div class="col-md-6">
               <label class="form-label" for="urlRecepcion">URL WS Recepción SRI *</label>
-              <input class="form-control" id="urlRecepcion" th:field="*{urlRecepcion}" maxlength="300" required>
+              <input class="form-control" id="urlRecepcion" th:field="*{urlRecepcion}" readonly>
             </div>
             <div class="col-md-6">
               <label class="form-label" for="urlAutorizacion">URL WS Autorización SRI *</label>
-              <input class="form-control" id="urlAutorizacion" th:field="*{urlAutorizacion}" maxlength="300" required>
+              <input class="form-control" id="urlAutorizacion" th:field="*{urlAutorizacion}" readonly>
             </div>
 
             <div class="col-md-8">

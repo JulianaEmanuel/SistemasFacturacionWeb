@@ -19,7 +19,7 @@ import com.facturacion.sistemaweb.security.CredencialVersionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /** Las lecturas seleccionan columnas explícitas y nunca recuperan CONTRASENIA. */
-@Repository @Profile("sqlserver")
+@Repository @Profile({"sqlserver", "postgres"})
 public class AdministracionRepository {
     private final JdbcTemplate jdbc;
     private final CredencialVersionRepository versiones;

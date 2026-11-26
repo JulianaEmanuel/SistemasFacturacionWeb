@@ -13,7 +13,7 @@ import java.sql.ResultSet;
 import java.sql.Types;
 
 /** Detecta de forma compatible la migración de versionado y revoca sesiones/tokenes. */
-@Repository @Profile("sqlserver")
+@Repository @Profile({"sqlserver", "postgres"})
 public class CredencialVersionRepository {
     private final JdbcTemplate jdbc;
     private volatile Boolean disponible;

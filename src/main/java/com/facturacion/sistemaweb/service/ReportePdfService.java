@@ -15,7 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import com.facturacion.sistemaweb.model.*;
 
-@Service @Profile("sqlserver") @PreAuthorize("isAuthenticated()")
+@Service @Profile({"sqlserver", "postgres"}) @PreAuthorize("isAuthenticated()")
 public class ReportePdfService {
     // Paleta del portal.
     static final Color VERDE=new Color(30,107,58),VERDE_CLARO=new Color(232,244,236),TEXTO=new Color(31,41,51),

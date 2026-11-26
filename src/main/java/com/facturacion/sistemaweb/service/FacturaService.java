@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.*;
 import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.repository.*;
 
-@Service @Profile("sqlserver") @Transactional(readOnly=true)
+@Service @Profile({"sqlserver", "postgres"}) @Transactional(readOnly=true)
 @PreAuthorize("isAuthenticated()")
 public class FacturaService {
     private final FacturaRepository facturas;

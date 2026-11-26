@@ -12,7 +12,7 @@ import com.facturacion.sistemaweb.security.ClaveSegura;
 import com.facturacion.sistemaweb.security.CredencialVersionRepository;
 import com.facturacion.sistemaweb.security.TokenSeguro;
 
-@Service @Profile("sqlserver")
+@Service @Profile({"sqlserver", "postgres"})
 public class RecuperacionContraseniaService {
     public record Enlace(String correo,String token) { }
     private record CuentaCorreo(long id,String correo) { }

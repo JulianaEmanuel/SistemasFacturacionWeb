@@ -15,7 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.facturacion.sistemaweb.model.CuentaEmpleadoForm;
 import com.facturacion.sistemaweb.service.*;
 
-@Controller @Profile("sqlserver")
+@Controller @Profile({"sqlserver", "postgres"})
 @RequestMapping("/modulos/empleados/nueva-cuenta")
 @PreAuthorize("@adminAccess.allowed(authentication)")
 public class CuentaEmpleadoController {

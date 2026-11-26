@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.security.AdminAccess;
 
-@Service @Profile("sqlserver")
+@Service @Profile({"sqlserver", "postgres"})
 public class EmpleadoSesionService {
     private final EntityManager em;
     private final AdminAccess admin;

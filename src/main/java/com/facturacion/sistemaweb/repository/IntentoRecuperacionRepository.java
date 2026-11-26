@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Aplica ventanas móviles por destino e IP sin conservar correo ni IP en claro. */
-@Repository @Profile("sqlserver")
+@Repository @Profile({"sqlserver", "postgres"})
 public class IntentoRecuperacionRepository {
     private final JdbcTemplate jdbc;
     public IntentoRecuperacionRepository(JdbcTemplate jdbc) { this.jdbc=jdbc; }

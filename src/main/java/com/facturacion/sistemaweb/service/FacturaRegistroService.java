@@ -7,7 +7,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import com.facturacion.sistemaweb.model.FacturaForm;
 
-@Service @Profile("sqlserver") @PreAuthorize("isAuthenticated()")
+@Service @Profile({"sqlserver", "postgres"}) @PreAuthorize("isAuthenticated()")
 public class FacturaRegistroService {
     /** {@code nueva} es falso cuando el token ya había registrado la factura (doble envío). */
     public record Registro(Long id,boolean nueva) { }

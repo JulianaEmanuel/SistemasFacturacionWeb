@@ -19,7 +19,7 @@ import com.facturacion.sistemaweb.model.FacturaVista;
  * Envía al cliente el comprobante de una factura ya confirmada en la base.
  * Nunca lanza excepciones: un fallo de correo no debe deshacer ni duplicar la factura.
  */
-@Service @Profile("sqlserver") @PreAuthorize("isAuthenticated()")
+@Service @Profile({"sqlserver", "postgres"}) @PreAuthorize("isAuthenticated()")
 public class FacturaCorreoService {
     public enum Estado { ENVIADO, SIN_CORREO, NO_CONFIGURADO, FALLO }
     public record Resultado(Estado estado,String destino) {

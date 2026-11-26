@@ -28,7 +28,7 @@ import com.facturacion.sistemaweb.service.ProveedorNoEncontradoException;
 import jakarta.validation.Valid;
 
 @Controller
-@Profile("sqlserver")
+@Profile({"sqlserver", "postgres"})
 @RequestMapping("/modulos/productos")
 public class ProductoController {
 

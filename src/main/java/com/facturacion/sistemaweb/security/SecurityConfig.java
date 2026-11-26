@@ -51,7 +51,7 @@ public class SecurityConfig {
         return http.build();
     }
     // En nodb no existe una cuenta de desarrollo ni contraseña autogenerada.
-    @Bean @Profile("!sqlserver")
+    @Bean @Profile("!sqlserver & !postgres")
     org.springframework.security.core.userdetails.UserDetailsService sinBase() {
         return name -> { throw new org.springframework.security.core.userdetails.UsernameNotFoundException("Credenciales incorrectas."); };
     }

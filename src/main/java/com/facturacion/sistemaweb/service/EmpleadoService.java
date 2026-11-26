@@ -11,7 +11,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.repository.EmpleadoRepository;
 
 @Service
-@Profile("sqlserver")
+@Profile({"sqlserver", "postgres"})
 @Transactional(readOnly = true)
 public class EmpleadoService {
     private final EmpleadoRepository empleados;
