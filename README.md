@@ -35,6 +35,16 @@ El nombre predeterminado de la base normal es sistemafacturacionweb.
    abre http://127.0.0.1:8081/login por defecto. APP_URL_PRUEBAS permite
    ajustar el destino por despliegue.
 
+Para entrar a pruebas desde una sesión administrativa, establece
+APP_PASE_PRUEBAS_CLAVE con el mismo valor Base64 de 32 bytes aleatorios
+en ambas instancias. En la principal, configura APP_PASE_PRUEBAS_ORIGEN
+con la cuenta administradora autorizada para usar el botón. En pruebas,
+APP_PASE_PRUEBAS_DESTINO identifica la cuenta administradora de destino
+y usa admin_pruebas por defecto. Protege la clave como una credencial
+de despliegue y usa HTTPS si las instancias se exponen fuera del equipo.
+El pase vence en 30 segundos, se consume una sola vez y abre una sesión
+separada en pruebas.
+
 El envío de XML se habilita en la instancia de pruebas y apunta al servicio
 de certificación del SRI con código 1. Los datos ficticios sirven para
 ensayar el registro y generar XML localmente. La autorización remota

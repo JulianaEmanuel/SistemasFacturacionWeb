@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"><title>Entrar a pruebas</title></head>
+<body>
+    <p id="estado-pase" role="status">Abriendo el ambiente de pruebas…</p>
+    <form id="form-pase" method="post" th:action="@{/ambiente/entrar}">
+        <input type="hidden" name="pase" id="pase">
+    </form>
+    <script th:src="@{/js/pase-pruebas.js}" defer></script>
+</body>
+</html>
