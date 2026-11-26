@@ -29,7 +29,17 @@ $env:DB_PRUEBAS_PASSWORD = [System.Net.NetworkCredential]::new('', $clave).Passw
 .\mvnw.cmd spring-boot:run
 ```
 
-Abre http://127.0.0.1:8081/login. El enlace con la sesión administrativa se configura según el [README](README.md).
+Abre http://127.0.0.1:8081/login.
+
+Para entrar a pruebas desde una sesión administrativa, establece
+APP_PASE_PRUEBAS_CLAVE con el mismo valor Base64 de 32 bytes aleatorios
+en ambas instancias. En la principal, configura APP_PASE_PRUEBAS_ORIGEN
+con la cuenta administradora autorizada para usar el botón. En pruebas,
+APP_PASE_PRUEBAS_DESTINO identifica la cuenta administradora de destino
+y usa admin_pruebas por defecto. Protege la clave como una credencial
+de despliegue y usa HTTPS si las instancias se exponen fuera del equipo.
+El pase vence en 30 segundos, se consume una sola vez y abre una sesión
+separada en pruebas.
 
 Si la conexión es remota, configura el host, puerto y modo TLS mediante `DB_HOST`, `DB_PORT`, `DB_SSLMODE` o sus equivalentes `DB_PRUEBAS_HOST`, `DB_PRUEBAS_PORT`, `DB_PRUEBAS_SSLMODE`. Para verificar identidad del servidor usa `verify-full` con un certificado de confianza.
 
