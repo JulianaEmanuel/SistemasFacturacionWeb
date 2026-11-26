@@ -63,6 +63,29 @@ public class RecuperacionController {
         return "recuperacion/restablecer";
     }
 
+    @GetMapping("/perfil/contrasenia")
+    public String clavePropia() {
+        return "recuperacion/cambiar-clave";
+    }
+
+    @PostMapping("/perfil/contrasenia")
+    public String cambiarClavePropia(@RequestParam String actual, @RequestParam String password,
+            @RequestParam String confirmation, Authentication authentication,
+            jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response, Model model) {
+        try {
+            recuperacion.cambiarClavePropia(idCuenta(authentication), authentication.getName(), actual, password, confirmation);
+            new org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler()
+                    .logout(request, response, authentication);
+            return "redirect:/login?passwordChanged";
+        } catch (AdministracionException ex) {
+            model.addAttribute("error", ex.getMessage());
+        } catch (DataAccessException ex) {
+            log.warn("No se pudo cambiar la contraseña de la sesión ({}).", ex.getClass().getSimpleName());
+            model.addAttribute("error", "No se pudo cambiar la contraseña. Inténtalo más tarde.");
+        }
+        return "recuperacion/cambiar-clave";
+    }
+
     @GetMapping("/cuenta/correo")
     public String correoCuenta(Model model) {
         model.addAttribute("bandejaLocal",bandejaLocal);

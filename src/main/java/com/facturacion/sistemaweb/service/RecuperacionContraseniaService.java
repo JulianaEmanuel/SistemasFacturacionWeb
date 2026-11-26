@@ -148,6 +148,35 @@ public class RecuperacionContraseniaService {
         }
     }
 
+    @Transactional
+    public void cambiarClavePropia(long idUsuario, String nombre, String actual, String nueva, String confirmacion) {
+        claves.validar(nueva, confirmacion);
+        versiones.bloquearCuenta(idUsuario);
+        String filtro = " WHERE ID_USUARIO=? AND NOMBRE_USUARIO=? AND ACTIVO=" + (postgres ? "true" : "1");
+        var hashes = jdbc.query("SELECT CONTRASENIA FROM dbo.Usuario" + filtro,
+                (rs, i) -> rs.getBytes(1), idUsuario, nombre);
+        if (hashes.size() != 1) {
+            throw new AdministracionException("La cuenta ya no está disponible.");
+        }
+        byte[] guardada = hashes.getFirst();
+        try {
+            if (!claves.matches(actual, new String(guardada, java.nio.charset.StandardCharsets.UTF_8))) {
+                throw new AdministracionException("La contraseña actual no coincide.");
+            }
+        } finally {
+            Arrays.fill(guardada, (byte) 0);
+        }
+        byte[] codificada = claves.codificar(nueva);
+        try {
+            if (jdbc.update("UPDATE dbo.Usuario SET CONTRASENIA=?" + filtro, codificada, idUsuario, nombre) != 1) {
+                throw new AdministracionException("La cuenta ya no está disponible.");
+            }
+            versiones.incrementarYRevocar(idUsuario);
+        } finally {
+            Arrays.fill(codificada, (byte) 0);
+        }
+    }
+
     private static String normalizar(String correo) {
         if(correo==null) return "";
         String limpio=correo.strip();

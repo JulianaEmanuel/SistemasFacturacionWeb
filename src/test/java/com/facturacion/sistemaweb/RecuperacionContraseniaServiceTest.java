@@ -85,4 +85,22 @@ class RecuperacionContraseniaServiceTest {
         assertTrue(consultaBloqueada.contains("REVOCADO_EN IS NULL"));
         assertTrue(consultaBloqueada.contains("EXPIRA_EN>SYSUTCDATETIME()"));
     }
+
+    @Test void cambiarClavePropiaActualizaSoloLaCuentaAutenticadaYRevocaSesiones() {
+        org.springframework.test.util.ReflectionTestUtils.setField(service,"postgres",true);
+        byte[] anterior="hash-anterior".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] nueva={1,2,3};
+        when(jdbc.query(contains("ACTIVO=true"),any(RowMapper.class),eq(44L),eq("juliana")))
+            .thenReturn(java.util.Collections.singletonList(anterior));
+        when(claves.matches("actual","hash-anterior")).thenReturn(true);
+        when(claves.codificar("Nueva contraseña válida")).thenReturn(nueva);
+        when(jdbc.update(contains("ACTIVO=true"),same(nueva),eq(44L),eq("juliana"))).thenReturn(1);
+
+        service.cambiarClavePropia(44L,"juliana","actual","Nueva contraseña válida","Nueva contraseña válida");
+
+        verify(versiones).bloquearCuenta(44L);
+        verify(versiones).incrementarYRevocar(44L);
+        assertArrayEquals(new byte[anterior.length],anterior);
+        assertArrayEquals(new byte[nueva.length],nueva);
+    }
 }

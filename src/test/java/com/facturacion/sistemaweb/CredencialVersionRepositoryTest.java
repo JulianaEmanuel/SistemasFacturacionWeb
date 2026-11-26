@@ -28,7 +28,7 @@ class CredencialVersionRepositoryTest {
         when(jdbc.queryForObject(contains("OBJECT_ID"),eq(Integer.class))).thenReturn(1);
         when(jdbc.update(anyString(),anyLong())).thenReturn(1);
         new CredencialVersionRepository(jdbc).incrementarYRevocar(18L);
-        verify(jdbc).update(contains("VERSION_CREDENCIAL=ISNULL"),eq(18L));
+        verify(jdbc).update(contains("VERSION_CREDENCIAL=COALESCE"),eq(18L));
         verify(jdbc).update(contains("UPDATE dbo.RecuperacionContrasenia SET REVOCADO_EN"),eq(18L));
     }
 }

@@ -76,7 +76,7 @@ public class CredencialVersionRepository {
     }
 
     public void incrementarYRevocar(long id) {
-        if(disponible() && jdbc.update("UPDATE dbo.Usuario SET VERSION_CREDENCIAL=ISNULL(VERSION_CREDENCIAL,0)+1 WHERE ID_USUARIO=?",id)!=1)
+        if(disponible() && jdbc.update("UPDATE dbo.Usuario SET VERSION_CREDENCIAL=COALESCE(VERSION_CREDENCIAL,0)+1 WHERE ID_USUARIO=?",id)!=1)
             throw new DataAccessResourceFailureException("No se pudo incrementar la versión de credencial de la cuenta.");
         revocarRecuperaciones(id);
     }
