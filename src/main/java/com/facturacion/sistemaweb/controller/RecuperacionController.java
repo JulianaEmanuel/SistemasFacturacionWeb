@@ -12,10 +12,12 @@ import com.facturacion.sistemaweb.security.CorreoRecuperacion;
 import com.facturacion.sistemaweb.service.RecuperacionContraseniaService;
 import com.facturacion.sistemaweb.service.AdministracionException;
 
-@Controller @Profile("sqlserver")
+@Controller @Profile({"sqlserver", "postgres"})
 public class RecuperacionController {
     private static final Logger log=LoggerFactory.getLogger(RecuperacionController.class);
     private static final String MENSAJE_PUBLICO="Si existe una cuenta activa con ese correo verificado, recibirás un enlace de seguridad.";
+    @org.springframework.beans.factory.annotation.Value("#{environment.getProperty('app.correo.bandeja-local', T(java.lang.Boolean), environment.matchesProfiles('pruebas'))}")
+    private boolean bandejaLocal;
     private final RecuperacionContraseniaService recuperacion;
     private final CorreoRecuperacion correo;
     public RecuperacionController(RecuperacionContraseniaService recuperacion,CorreoRecuperacion correo) {
@@ -61,20 +63,58 @@ public class RecuperacionController {
         return "recuperacion/restablecer";
     }
 
+    @GetMapping("/perfil/contrasenia")
+    public String clavePropia() {
+        return "recuperacion/cambiar-clave";
+    }
+
+    @PostMapping("/perfil/contrasenia")
+    public String cambiarClavePropia(@RequestParam String actual, @RequestParam String password,
+            @RequestParam String confirmation, Authentication authentication,
+            jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response, Model model) {
+        try {
+            recuperacion.cambiarClavePropia(idCuenta(authentication), authentication.getName(), actual, password, confirmation);
+            new org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler()
+                    .logout(request, response, authentication);
+            return "redirect:/login?passwordChanged";
+        } catch (AdministracionException ex) {
+            model.addAttribute("error", ex.getMessage());
+        } catch (DataAccessException ex) {
+            log.warn("No se pudo cambiar la contraseña de la sesión ({}).", ex.getClass().getSimpleName());
+            model.addAttribute("error", "No se pudo cambiar la contraseña. Inténtalo más tarde.");
+        }
+        return "recuperacion/cambiar-clave";
+    }
+
     @GetMapping("/cuenta/correo")
-    public String correoCuenta() { return "recuperacion/correo-cuenta"; }
+    public String correoCuenta(Model model) {
+        model.addAttribute("bandejaLocal",bandejaLocal);
+        return "recuperacion/correo-cuenta";
+    }
 
     @PostMapping("/cuenta/correo")
     public String solicitarVerificacion(@RequestParam(required=false) String email,Authentication authentication,
             jakarta.servlet.http.HttpServletRequest request,Model model) {
+        model.addAttribute("bandejaLocal",bandejaLocal);
+        if (bandejaLocal && (email==null || !email.strip().toLowerCase(java.util.Locale.ROOT).endsWith("@example.invalid"))) {
+            model.addAttribute("alertaCorreo","Usa una dirección ficticia que termine en @example.invalid.");
+            return "recuperacion/correo-cuenta";
+        }
         try {
             long id=idCuenta(authentication);
             var enlace=recuperacion.solicitarVerificacion(id,email,request.getRemoteAddr());
-            if(enlace!=null) correo.enviarVerificacion(enlace.correo(),enlace.token());
+            if (enlace != null && bandejaLocal) {
+                model.addAttribute("enlaceLocal",enlace);
+            } else if (enlace != null) {
+                correo.enviarVerificacion(enlace.correo(),enlace.token());
+                model.addAttribute("mensaje","Si el correo puede asociarse a esta cuenta, recibirás un enlace de verificación.");
+            } else {
+                model.addAttribute("alertaCorreo","No se pudo generar la verificación. Revisa la dirección o inténtalo más tarde.");
+            }
         } catch(DataAccessException | MailException | AdministracionException ex) {
             log.warn("No se pudo completar una solicitud de verificación de correo ({}).",ex.getClass().getSimpleName());
+            model.addAttribute("alertaCorreo","No se pudo enviar la verificación. Inténtalo más tarde.");
         }
-        model.addAttribute("mensaje","Si el correo puede asociarse a esta cuenta, recibirás un enlace de verificación.");
         return "recuperacion/correo-cuenta";
     }
 

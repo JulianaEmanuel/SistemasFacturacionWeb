@@ -32,7 +32,7 @@ public class SistemawebApplication {
 			try (var context = app.run(args)) { /* Sin servidor; cierra conexiones al terminar. */ }
 		} else if (java.util.Arrays.asList(args).contains("--bootstrap-admin")) {
 			app.setWebApplicationType(org.springframework.boot.WebApplicationType.NONE);
-			app.setAdditionalProfiles("sqlserver", "bootstrap-admin");
+			app.setAdditionalProfiles("bootstrap-admin");
 			app.addInitializers(context -> {
 				if (context instanceof org.springframework.web.context.WebApplicationContext)
 					throw new IllegalStateException("El comando inicial no permite servidor web.");

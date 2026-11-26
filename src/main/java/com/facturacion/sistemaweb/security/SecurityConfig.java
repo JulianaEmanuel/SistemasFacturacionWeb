@@ -21,7 +21,7 @@ public class SecurityConfig {
                 access.getIfAvailable()!=null && access.getObject().allowed(authentication.get()));
         http.authorizeHttpRequests(a -> a
             .requestMatchers("/login","/recuperar-contrasenia","/restablecer-contrasenia","/verificar-correo",
-                "/css/**","/js/**","/images/**","/favicon.ico","/error").permitAll()
+                "/css/**","/js/**","/images/**","/favicon.ico","/error","/ambiente/entrar").permitAll()
             .requestMatchers("/modulos/usuarios","/modulos/usuarios/**","/modulos/tipos-usuario","/modulos/tipos-usuario/**")
                 .access(soloAdmin)
             .requestMatchers(HttpMethod.GET,"/modulos/clientes","/modulos/clientes/nuevo")
@@ -51,7 +51,7 @@ public class SecurityConfig {
         return http.build();
     }
     // En nodb no existe una cuenta de desarrollo ni contraseña autogenerada.
-    @Bean @Profile("!sqlserver")
+    @Bean @Profile("!sqlserver & !postgres")
     org.springframework.security.core.userdetails.UserDetailsService sinBase() {
         return name -> { throw new org.springframework.security.core.userdetails.UsernameNotFoundException("Credenciales incorrectas."); };
     }

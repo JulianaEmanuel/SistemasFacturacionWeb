@@ -1,5 +1,6 @@
 package com.facturacion.sistemaweb.controller;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.NoSuchElementException;
 import jakarta.servlet.http.HttpSession;
@@ -21,7 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.*;
 
-@Controller @Profile("sqlserver") @RequestMapping("/modulos/facturas")
+@Controller @Profile({"sqlserver", "postgres"}) @RequestMapping("/modulos/facturas")
 @PreAuthorize("isAuthenticated()")
 public class FacturaController {
     private final FacturaService facturas;
@@ -89,9 +90,19 @@ public class FacturaController {
     @GetMapping("/{idFactura}") public String detalle(@PathVariable Long idFactura,Model model) {
         model.addAttribute("factura",facturas.consultar(idFactura));
         var srvSri=sri.getIfAvailable();
-        if(srvSri!=null) {
-            model.addAttribute("sri",srvSri.buscarEstadoSri(idFactura).orElse(null));
-            model.addAttribute("emisor",srvSri.obtenerEmisorActivo());
+        if (srvSri != null) {
+            try {
+                var estado = srvSri.buscarEstadoSri(idFactura);
+                var emisor = srvSri.obtenerEmisorActivo();
+                model.addAttribute("sri", estado.orElse(null));
+                model.addAttribute("emisor", emisor);
+            } catch (InvalidDataAccessResourceUsageException ex) {
+                if (!(ex.getMostSpecificCause() instanceof SQLException sql)
+                        || !"42P01".equals(sql.getSQLState())) {
+                    throw ex;
+                }
+                model.addAttribute("sriPendienteInstalacion", true);
+            }
         }
         return "facturas/detalle";
     }

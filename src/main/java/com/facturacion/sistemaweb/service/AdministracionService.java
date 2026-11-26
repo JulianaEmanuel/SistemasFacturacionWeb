@@ -10,7 +10,7 @@ import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.repository.*;
 import com.facturacion.sistemaweb.security.*;
 
-@Service @Profile("sqlserver")
+@Service @Profile({"sqlserver", "postgres"})
 @Transactional(readOnly=true)
 @PreAuthorize("@adminAccess.allowed(authentication)")
 public class AdministracionService {

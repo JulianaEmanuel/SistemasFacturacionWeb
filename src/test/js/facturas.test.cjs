@@ -17,7 +17,7 @@ function screen(catalog) {
             get selectedOptions() { return [{ dataset: catalog[this.value] || {} }]; } };
         const input = { value: '1' };
         r.select = select;r.input = input;
-        r.querySelector = key => key === 'select' ? select : key === 'input' ? input : values[/data-valor="([^"]+)"/.exec(key)[1]];
+        r.querySelector = key => key === 'select' ? select : (key === 'input' || key === '.factura-cantidad') ? input : values[/data-valor="([^"]+)"/.exec(key)[1]];
         r.querySelectorAll = () => Object.values(values);
         return r;
     }
@@ -27,7 +27,14 @@ function screen(catalog) {
     const document = { getElementById: id => elements.get(id), querySelector: () => null };
     vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../../main/resources/static/js/facturas.js'), 'utf8'),
         { document, window: { addEventListener() {}, print() {} } });
-    return { rows, elements, change: r => body.events.change({ target: r.select }), input: () => body.events.input(), add: () => elements.get('factura-agregar').events.click() };
+    return {
+        rows, elements, change: r => body.events.change({ target: r.select }),
+        input: () => body.events.input(), add: () => elements.get('factura-agregar').events.click(),
+        step(r, direction) {
+            const button = { dataset: { pasoCantidad: String(direction) }, closest: () => r };
+            body.events.click({ target: { closest: selector => selector === '[data-paso-cantidad]' ? button : null } });
+        }
+    };
 }
 test('previsualiza importes con HALF_UP y cuatro decimales internos', () => {
     const ui = screen({ '3': { precio: '12.3456', iva: '15.00' } });
@@ -83,4 +90,26 @@ test('acumula cantidades con coma y punto sin pérdida de precisión', () => {
     ui.rows[1].select.value = '3';ui.rows[1].input.value = '0.98';ui.change(ui.rows[1]);
     assert.equal(ui.rows.length, 1);assert.equal(ui.rows[0].input.value, '2.00');
     assert.equal(ui.elements.get('factura-total').textContent, '230.00');
+});
+
+test('los botones ajustan una unidad y conservan la edición decimal manual', () => {
+    const ui = screen({ '3': { precio: '10.0000', iva: '0.00' } });
+    ui.add();
+    const row = ui.rows[1];
+    row.select.value = '3';
+    ui.change(row);
+
+    ui.step(row, -1);
+    assert.equal(row.input.value, '1');
+    row.input.value = '1,25';
+    ui.input();
+    ui.step(row, 1);
+    assert.equal(row.input.value, '2,25');
+    assert.equal(ui.elements.get('factura-total').textContent, '22.50');
+    ui.step(row, -1);
+    assert.equal(row.input.value, '1,25');
+
+    row.input.value = '999999,99';
+    ui.step(row, 1);
+    assert.equal(row.input.value, '999999,99');
 });

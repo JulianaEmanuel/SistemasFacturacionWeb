@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Cambiar contraseña | Sistema de Facturación Web')}"></head>
+<body class="login-page">
+<main class="login-stage">
+    <section class="login-card" aria-labelledby="titulo-clave">
+        <h1 id="titulo-clave">Cambiar contraseña</h1>
+        <p class="login-description">Al guardar, tendrás que iniciar sesión de nuevo.</p>
+        <div th:if="${error}" class="portal-message message-error" role="alert" th:text="${error}"></div>
+        <form method="post" th:action="@{/perfil/contrasenia}" class="login-form">
+            <label for="actual">Contraseña actual</label>
+            <div class="login-input"><input id="actual" name="actual" type="password" maxlength="128" autocomplete="current-password" required></div>
+            <label for="password">Nueva contraseña</label>
+            <div class="login-input"><input id="password" name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div>
+            <label for="confirmation">Confirmar nueva contraseña</label>
+            <div class="login-input"><input id="confirmation" name="confirmation" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></div>
+            <button type="submit" class="portal-primary login-submit">Guardar contraseña</button>
+        </form>
+    </section>
+    <a class="login-footer" th:href="@{/perfil}">Volver a mi perfil</a>
+</main>
+</body>
+</html>

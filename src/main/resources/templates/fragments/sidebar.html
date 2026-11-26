@@ -12,6 +12,18 @@
 		<div class="offcanvas-body p-0 d-flex flex-column">
 			<p class="nav-caption">MENÚ PRINCIPAL</p>
 			<nav class="sidebar-nav">
+                <p th:if="${ambientePruebas}" class="alert alert-warning mx-2" role="status">Ambiente de pruebas</p>
+                <a th:if="${ambientePruebas and !#strings.isEmpty(urlPrincipal)}" class="sidebar-link" th:href="${urlPrincipal}">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i><span>Volver al ambiente principal</span>
+                </a>
+                <form method="post" th:if="${accesoDirectoPruebas}" th:action="@{/ambiente/ir-a-pruebas}">
+                    <button type="submit" class="sidebar-link w-100 border-0">
+                        <i class="bi bi-tools" aria-hidden="true"></i><span>Entrar a pruebas</span>
+                    </button>
+                </form>
+                <a th:if="${ambientePruebas != true and accesoDirectoPruebas != true and !#strings.isEmpty(urlPruebas)}" class="sidebar-link" th:href="${urlPruebas}">
+                    <i class="bi bi-tools" aria-hidden="true"></i><span>Entrar a pruebas</span>
+                </a>
 				<a class="sidebar-link" th:classappend="${activePage == 'dashboard'} ? ' is-active' : ''" th:href="@{/}">
 					<i class="bi bi-grid-1x2" aria-hidden="true"></i><span>Inicio</span>
 				</a>

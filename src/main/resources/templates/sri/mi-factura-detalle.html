@@ -62,7 +62,7 @@
           <a class="btn btn-outline-secondary" th:href="@{/modulos/mis-facturas}">Volver</a>
           <a class="btn btn-outline-dark" th:href="@{/modulos/facturas/{id}/xml(id=${factura.id})}">Descargar XML (SRI)</a>
           <a class="btn btn-outline-danger" target="_blank" th:href="@{/modulos/facturas/{id}/ride(id=${factura.id})}">Generar RIDE (PDF)</a>
-          <form method="post" th:action="@{/modulos/facturas/{id}/enviar-sri(id=${factura.id})}" class="d-inline">
+          <form th:if="${ambientePruebas}" method="post" th:action="@{/modulos/facturas/{id}/enviar-sri(id=${factura.id})}" class="d-inline">
             <input type="hidden" name="origen" value="cliente">
             <button class="btn btn-success" type="submit">Enviar al SRI (Pruebas)</button>
           </form>

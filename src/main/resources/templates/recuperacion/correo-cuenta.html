@@ -13,9 +13,18 @@
         <div class="login-card-symbol"><i class="bi bi-envelope-check" aria-hidden="true"></i></div>
         <p class="portal-eyebrow">SEGURIDAD DE LA CUENTA</p>
         <h1 id="email-title">Verifica tu correo</h1>
-        <p class="login-description">El correo se asociará a tu cuenta únicamente después de confirmar el enlace enviado a esa dirección.</p>
+        <p th:if="${bandejaLocal}" class="login-description">Bandeja local de pruebas. Usa una dirección ficticia, como <strong>cuenta@example.invalid</strong>.</p>
+        <p th:unless="${bandejaLocal}" class="login-description">El correo se asociará a tu cuenta únicamente después de confirmar el enlace enviado a esa dirección.</p>
         <div th:if="${mensaje}" class="portal-message message-success" role="status" th:text="${mensaje}"></div>
-        <form method="post" th:action="@{/cuenta/correo}" class="login-form">
+        <div th:if="${alertaCorreo}" class="portal-message message-error" role="alert" th:text="${alertaCorreo}"></div>
+        <div th:if="${enlaceLocal}" class="portal-message message-success" role="status">
+            <span>Verificación disponible para <strong th:text="${enlaceLocal.correo}"></strong>.</span>
+        </div>
+        <form th:if="${enlaceLocal}" method="post" th:action="@{/verificar-correo}" class="login-form">
+            <input type="hidden" name="token" th:value="${enlaceLocal.token}">
+            <button type="submit" class="portal-primary login-submit">Confirmar correo</button>
+        </form>
+        <form th:unless="${enlaceLocal}" method="post" th:action="@{/cuenta/correo}" class="login-form">
             <label for="email">Correo electrónico</label>
             <div class="login-input"><i class="bi bi-envelope" aria-hidden="true"></i><input id="email" name="email" type="email" maxlength="254" autocomplete="email" placeholder="tu-correo@ejemplo.com" required></div>
             <button class="portal-primary login-submit" type="submit">Enviar verificación <i class="bi bi-arrow-right" aria-hidden="true"></i></button>

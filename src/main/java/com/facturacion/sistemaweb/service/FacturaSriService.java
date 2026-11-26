@@ -20,7 +20,7 @@ import com.facturacion.sistemaweb.repository.*;
  * 4) Envía el XML al SRI en ambiente de pruebas y guarda el retorno explícito.
  */
 @Service
-@Profile("sqlserver")
+@Profile({"sqlserver", "postgres"})
 @PreAuthorize("isAuthenticated()")
 public class FacturaSriService {
 
@@ -44,6 +44,9 @@ public class FacturaSriService {
     private final EmpleadoSesionService sesion;
     private final SriXmlService xmlService;
     private final SriFirmaXmlService firmaService;
+    @org.springframework.beans.factory.annotation.Value("#{environment.matchesProfiles('pruebas')}")
+    private boolean ambientePruebas;
+
     private final SriClienteSoapService soapService;
     private final SriRidePdfService rideService;
     private final JdbcTemplate jdbc;
@@ -81,7 +84,7 @@ public class FacturaSriService {
 
     @Transactional
     public EmisorSri obtenerEmisorActivo() {
-        return emisores.findFirstByActivoTrueOrderByIdEmisorAsc().orElseGet(() -> {
+        EmisorSri emisor = emisores.findFirstByActivoTrueOrderByIdEmisorAsc().orElseGet(() -> {
             EmisorSri def = new EmisorSri();
             def.setRuc("0999999999001");
             def.setRazonSocial("EMPRESA DEMO FACTURACION S.A.");
@@ -98,6 +101,10 @@ public class FacturaSriService {
             def.setActivo(true);
             return emisores.save(def);
         });
+        emisor.setAmbiente((short) 1);
+        emisor.setUrlRecepcion(SriClienteSoapService.URL_RECEPCION_PRUEBAS);
+        emisor.setUrlAutorizacion(SriClienteSoapService.URL_AUTORIZACION_PRUEBAS);
+        return emisor;
     }
 
     @Transactional(readOnly = true)
@@ -132,10 +139,10 @@ public class FacturaSriService {
         e.setPuntoEmision(form.getPuntoEmision());
         e.setObligadoContabilidad(form.isObligadoContabilidad());
         e.setContribuyenteEspecial(form.getContribuyenteEspecial());
-        e.setAmbiente(form.getAmbiente() != null && form.getAmbiente() == 2 ? (short) 2 : (short) 1);
+        e.setAmbiente((short) 1);
         e.setTipoEmision((short) 1);
-        e.setUrlRecepcion(form.getUrlRecepcion());
-        e.setUrlAutorizacion(form.getUrlAutorizacion());
+        e.setUrlRecepcion(SriClienteSoapService.URL_RECEPCION_PRUEBAS);
+        e.setUrlAutorizacion(SriClienteSoapService.URL_AUTORIZACION_PRUEBAS);
         e.setRutaCertificado(form.getRutaCertificado());
         if (form.getClaveCertificado() != null && !form.getClaveCertificado().isEmpty()) {
             e.setClaveCertificado(form.getClaveCertificado());
@@ -296,16 +303,18 @@ public class FacturaSriService {
     /** Realiza el envío real al Web Service del SRI en ambiente de pruebas y guarda el retorno explícito. */
     @Transactional
     public EnvioResultado enviarAlSriAmbientePruebas(Long idFactura) {
+        if (!ambientePruebas) {
+            throw new org.springframework.security.access.AccessDeniedException("El envío SRI requiere la instancia de pruebas.");
+        }
         FacturaVista vista = consultarComoAdminOCliente(idFactura);
-        EmisorSri emisor = obtenerEmisorActivo();
         FacturaSri sri = generarOActualizarXml(vista.id());
 
         SriClienteSoapService.RespuestaSri resp = soapService.enviarYConsultarAutorizacion(
                 sri.getXmlComprobante(),
                 sri.getClaveAcceso(),
-                emisor.getUrlRecepcion(),
-                emisor.getUrlAutorizacion(),
-                emisor.getAmbiente() != null ? emisor.getAmbiente() : (short) 1);
+                SriClienteSoapService.URL_RECEPCION_PRUEBAS,
+                SriClienteSoapService.URL_AUTORIZACION_PRUEBAS,
+                (short) 1);
 
         LocalDateTime ahora = LocalDateTime.now(ZoneId.of("America/Guayaquil"));
         sri.setFechaEnvio(ahora);

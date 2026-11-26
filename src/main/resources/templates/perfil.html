@@ -13,6 +13,7 @@
                 <div th:if="${errorPerfil}" class="alert alert-danger" role="alert" th:text="${errorPerfil}"></div>
                 <div class="profile-summary"><img class="profile-preview" th:src="@{/perfil/foto}" id="profile-preview" alt="Tu foto de perfil" width="128" height="128"><div><h3 th:text="${cuentaActual}">Usuario</h3><p>Tu cuenta, tu imagen.</p></div></div>
                 <div class="portal-message message-warning" role="note">Para recuperar tu contraseña por correo, primero verifica una dirección en <a th:href="@{/cuenta/correo}">Seguridad de la cuenta</a>.</div>
+                <p><a class="btn btn-outline-secondary" th:href="@{/perfil/contrasenia}">Cambiar contraseña</a></p>
                 <form method="post" th:action="@{/perfil/foto}" enctype="multipart/form-data" id="profile-photo-form">
                     <label for="profile-photo" class="form-label">Nueva foto de perfil</label>
                     <input class="form-control" type="file" name="foto" id="profile-photo" accept="image/jpeg,image/png" required aria-describedby="profile-photo-help profile-photo-error">

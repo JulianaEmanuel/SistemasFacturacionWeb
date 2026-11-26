@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.facturacion.sistemaweb.model.*;
 import com.facturacion.sistemaweb.service.*;
 
-@Controller @Profile("sqlserver") @PreAuthorize("isAuthenticated()")
+@Controller @Profile({"sqlserver", "postgres"}) @PreAuthorize("isAuthenticated()")
 @RequestMapping("/modulos/reportes")
 public class ReporteController {
     private final ReporteService reportes;

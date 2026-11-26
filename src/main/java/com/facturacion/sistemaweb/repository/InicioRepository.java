@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import com.facturacion.sistemaweb.service.InicioService.*;
 
 /** Indicadores de lectura; Persona es el directorio que utiliza Clientes. */
-@Repository @Profile("sqlserver")
+@Repository @Profile({"sqlserver", "postgres"})
 public class InicioRepository {
     private final NamedParameterJdbcTemplate jdbc;
     public InicioRepository(NamedParameterJdbcTemplate jdbc) {this.jdbc=jdbc;}
