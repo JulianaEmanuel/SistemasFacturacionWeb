@@ -24,6 +24,21 @@
         if (value <= 0n || value > 99999999n) throw new Error("La cantidad debe estar entre 0.01 y 999999.99.");
         return value;
     }
+    function stepQuantity(input, direction) {
+        let units;
+        try {
+            units = input.value.trim() === "" ? 0n : quantity(input);
+        } catch (error) {
+            aviso.textContent = error.message;
+            return;
+        }
+        const next = units + direction * 100n;
+        if (next < 1n || next > 99999999n) return;
+        const separator = input.value.includes(",") ? "," : ".";
+        const decimal = String(next % 100n).padStart(2, "0").replace(/0+$/, "");
+        input.value = decimal ? (next / 100n) + separator + decimal : String(next / 100n);
+        update();
+    }
     function percentage(rate) {
         const decimal = String(rate % 100n).padStart(2, "0").replace(/0+$/, "");
         return `${rate / 100n}${decimal ? "," + decimal : ""} %`;
@@ -80,7 +95,16 @@
     document.getElementById("factura-agregar").addEventListener("click", add);
     body.addEventListener("input", update);
     body.addEventListener("change", event => { if (event.target.matches("select")) combine(event.target.closest("tr")); update(); });
-    body.addEventListener("click", event => { if (event.target.closest(".factura-quitar")) { event.target.closest("tr").remove(); update(); } });
+    body.addEventListener("click", event => {
+        const step = event.target.closest("[data-paso-cantidad]");
+        if (step) {
+            const input = step.closest("tr").querySelector(".factura-cantidad");
+            stepQuantity(input, BigInt(step.dataset.pasoCantidad));
+        } else if (event.target.closest(".factura-quitar")) {
+            event.target.closest("tr").remove();
+            update();
+        }
+    });
     form.addEventListener("submit", event => {
         if (!update()) { event.preventDefault(); return; }
         if (!form.reportValidity() || !rows().length) { event.preventDefault(); aviso.textContent = "Selecciona un cliente y al menos un producto con cantidad válida."; return; }
