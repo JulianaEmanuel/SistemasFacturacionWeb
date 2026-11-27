@@ -35,10 +35,26 @@ public class ClienteController {
 		this.personaService = personaService;
 	}
 
+	private static final int TAMANO_PAGINA = 8;
+
 	@GetMapping
-	public String listar(@RequestParam(required = false) String q, Model model) {
-		model.addAttribute("clientes", personaService.listar(q));
+	public String listar(@RequestParam(required = false) String q,
+			@RequestParam(defaultValue = "0") int pagina, Model model) {
+		var todos = personaService.listar(q);
+		int totalClientes = todos.size();
+		int totalPaginas = Math.max(1, (int) Math.ceil((double) totalClientes / TAMANO_PAGINA));
+		int paginaSegura = Math.max(0, Math.min(pagina, totalPaginas - 1));
+		int desde = paginaSegura * TAMANO_PAGINA;
+		int hasta = Math.min(totalClientes, desde + TAMANO_PAGINA);
+		var paginaClientes = desde >= totalClientes ? java.util.List.<Persona>of() : todos.subList(desde, hasta);
+
+		model.addAttribute("clientes", paginaClientes);
 		model.addAttribute("filtro", q == null ? "" : q);
+		model.addAttribute("paginaActual", paginaSegura);
+		model.addAttribute("totalPaginas", totalPaginas);
+		model.addAttribute("totalClientes", totalClientes);
+		model.addAttribute("tieneAnterior", paginaSegura > 0);
+		model.addAttribute("tieneSiguiente", paginaSegura + 1 < totalPaginas);
 		return "clientes/lista";
 	}
 

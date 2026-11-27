@@ -47,6 +47,29 @@ class ClienteFechaViewTest {
 				.andExpect(content().string(containsString("data-label=\"Fecha de nacimiento\">-</td>")));
 	}
 
+	@Test
+	void listaPaginaClientesDeOchoEnOcho() throws Exception {
+		var lista = new java.util.ArrayList<Persona>();
+		for (long i = 1; i <= 10; i++) {
+			Persona p = persona(i, null);
+			p.setNombresPersona("Cliente " + i);
+			lista.add(p);
+		}
+		when(personaService.listar(null)).thenReturn(lista);
+
+		mockMvc.perform(get("/modulos/clientes").param("pagina", "0"))
+				.andExpect(status().isOk())
+				.andExpect(content().string(containsString("10 clientes · Página 1 de 2")))
+				.andExpect(content().string(containsString("Cliente 1")))
+				.andExpect(content().string(containsString("Siguiente")));
+
+		mockMvc.perform(get("/modulos/clientes").param("pagina", "1"))
+				.andExpect(status().isOk())
+				.andExpect(content().string(containsString("10 clientes · Página 2 de 2")))
+				.andExpect(content().string(containsString("Cliente 10")))
+				.andExpect(content().string(containsString("Anterior")));
+	}
+
 	private Persona persona(Long id, LocalDateTime fechaNacimiento) {
 		Persona persona = new Persona();
 		persona.setIdPersona(id);
