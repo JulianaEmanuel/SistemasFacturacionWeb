@@ -3,8 +3,11 @@ package com.facturacion.sistemaweb.service;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import jakarta.mail.MessagingException;
+import jakarta.mail.util.ByteArrayDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -38,13 +41,21 @@ public class FacturaCorreoService {
     private final FacturaService facturas;
     private final JavaMailSender remitente;
     private final ITemplateEngine plantillas;
+    private final ObjectProvider<FacturaSriService> sriService;
     private final String correoRemitente;
     private final String nombreRemitente;
 
     public FacturaCorreoService(FacturaService facturas,JavaMailSender remitente,ITemplateEngine plantillas,
+            String correoRemitente,String nombreRemitente) {
+        this(facturas,remitente,plantillas,null,correoRemitente,nombreRemitente);
+    }
+
+    @Autowired
+    public FacturaCorreoService(FacturaService facturas,JavaMailSender remitente,ITemplateEngine plantillas,
+            ObjectProvider<FacturaSriService> sriService,
             @Value("${app.facturas.mail-from:${spring.mail.username:}}") String correoRemitente,
             @Value("${app.facturas.mail-nombre:Sistema de Facturación}") String nombreRemitente) {
-        this.facturas=facturas;this.remitente=remitente;this.plantillas=plantillas;
+        this.facturas=facturas;this.remitente=remitente;this.plantillas=plantillas;this.sriService=sriService;
         this.correoRemitente=correoRemitente==null?"":correoRemitente.strip();this.nombreRemitente=nombreRemitente;
     }
 
@@ -70,6 +81,14 @@ public class FacturaCorreoService {
             helper.setFrom(correoRemitente,nombreRemitente);helper.setTo(destino);
             helper.setSubject("Factura #"+factura.id()+" - Sistema de Facturación");
             helper.setText(textoPlano(factura),html);
+            var srvSri=sriService==null?null:sriService.getIfAvailable();
+            if(srvSri!=null) try {
+                var sri=srvSri.generarOActualizarXml(idFactura);
+                byte[] ride=srvSri.generarRidePdf(idFactura);
+                helper.addAttachment("RIDE-factura-"+sri.numeroComprobante()+".pdf",new ByteArrayDataSource(ride,"application/pdf"));
+                helper.addAttachment("factura-"+sri.numeroComprobante()+"-sri.xml",
+                    new ByteArrayDataSource(sri.getXmlComprobante().getBytes(java.nio.charset.StandardCharsets.UTF_8),"application/xml"));
+            } catch(RuntimeException ignored) { }
             remitente.send(mensaje);
             log.info("Factura {}: enviada por correo al cliente.",idFactura);
             return new Resultado(Estado.ENVIADO,destino);
